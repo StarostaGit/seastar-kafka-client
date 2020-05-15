@@ -21,12 +21,55 @@
 #
 
 cmake_minimum_required (VERSION 3.5)
-project (seastar-kafka-client)
+project (kafka4seastar)
 
 find_package (Seastar REQUIRED)
+
+set (GEN_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen)
+
+set(HEADER_DIRECTORY include/kafka4seastar)
+
+set(HEADERS
+        ${HEADER_DIRECTORY}/protocol/kafka_error_code.hh
+        ${HEADER_DIRECTORY}/protocol/kafka_primitives.hh
+        ${HEADER_DIRECTORY}/protocol/kafka_records.hh
+        ${HEADER_DIRECTORY}/protocol/api_versions_request.hh
+        ${HEADER_DIRECTORY}/protocol/api_versions_response.hh
+        ${HEADER_DIRECTORY}/protocol/headers.hh
+        ${HEADER_DIRECTORY}/protocol/metadata_request.hh
+        ${HEADER_DIRECTORY}/protocol/metadata_response.hh
+        ${HEADER_DIRECTORY}/protocol/produce_request.hh
+        ${HEADER_DIRECTORY}/protocol/produce_response.hh)
+
+set(SOURCES
+        src/protocol/kafka_error_code.cc
+        src/protocol/kafka_records.cc
+        src/protocol/api_versions_request.cc
+        src/protocol/api_versions_response.cc
+        src/protocol/headers.cc
+        src/protocol/metadata_request.cc
+        src/protocol/metadata_response.cc
+        src/protocol/produce_request.cc
+        src/protocol/produce_response.cc)
+
+add_library(kafka4seastar STATIC ${HEADERS})
+
+target_include_directories(kafka4seastar
+        PUBLIC
+            $<INSTALL_INTERFACE:include>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            $<BUILD_INTERFACE:${GEN_BINARY_DIR}/include>
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+            ${GEN_BINARY_DIR}/src)
+
+target_sources(kafka4seastar PRIVATE ${SOURCES})
 
 add_executable (main
         main.cpp)
 
-target_link_libraries (main
+target_link_libraries (kafka4seastar
         Seastar::seastar)
+
+target_link_libraries(main
+        kafka4seastar)
