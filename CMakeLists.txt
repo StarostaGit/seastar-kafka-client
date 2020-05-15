@@ -30,6 +30,9 @@ set (GEN_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen)
 set(HEADER_DIRECTORY include/kafka4seastar)
 
 set(HEADERS
+        ${HEADER_DIRECTORY}/connection/connection_manager.hh
+        ${HEADER_DIRECTORY}/connection/kafka_connection.hh
+        ${HEADER_DIRECTORY}/connection/tcp_connection.hh
         ${HEADER_DIRECTORY}/protocol/kafka_error_code.hh
         ${HEADER_DIRECTORY}/protocol/kafka_primitives.hh
         ${HEADER_DIRECTORY}/protocol/kafka_records.hh
@@ -42,6 +45,9 @@ set(HEADERS
         ${HEADER_DIRECTORY}/protocol/produce_response.hh)
 
 set(SOURCES
+        src/connection/connection_manager.cc
+        src/connection/kafka_connection.cc
+        src/connection/tcp_connection.cc
         src/protocol/kafka_error_code.cc
         src/protocol/kafka_records.cc
         src/protocol/api_versions_request.cc

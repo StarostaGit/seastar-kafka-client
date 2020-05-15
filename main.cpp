@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include <kafka4seastar/protocol/metadata_request.hh>
+#include <kafka4seastar/connection/connection_manager.hh>
 
 int main() {
     namespace k4s = kafka4seastar;
@@ -12,6 +13,8 @@ int main() {
     });
 
     auto r = k4s::metadata_request();
+    
+    k4s::connection_manager m {"manager"};
 
     return 0;
 }
