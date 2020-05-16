@@ -1,0 +1,7 @@
+build
+build.ninja
+
+.idea
+.project
+.cproject
+.settings
