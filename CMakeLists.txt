@@ -33,6 +33,7 @@ set(HEADERS
         ${HEADER_DIRECTORY}/connection/connection_manager.hh
         ${HEADER_DIRECTORY}/connection/kafka_connection.hh
         ${HEADER_DIRECTORY}/connection/tcp_connection.hh
+        ${HEADER_DIRECTORY}/producer/producer_properties.hh
         ${HEADER_DIRECTORY}/protocol/kafka_error_code.hh
         ${HEADER_DIRECTORY}/protocol/kafka_primitives.hh
         ${HEADER_DIRECTORY}/protocol/kafka_records.hh
@@ -43,7 +44,9 @@ set(HEADERS
         ${HEADER_DIRECTORY}/protocol/metadata_response.hh
         ${HEADER_DIRECTORY}/protocol/produce_request.hh
         ${HEADER_DIRECTORY}/protocol/produce_response.hh
-        ${HEADER_DIRECTORY}/utils/metadata_manager.hh)
+        ${HEADER_DIRECTORY}/utils/defaults.hh
+        ${HEADER_DIRECTORY}/utils/metadata_manager.hh
+        ${HEADER_DIRECTORY}/utils/partitioner.hh)
 
 set(SOURCES
         src/connection/connection_manager.cc
@@ -58,7 +61,9 @@ set(SOURCES
         src/protocol/metadata_response.cc
         src/protocol/produce_request.cc
         src/protocol/produce_response.cc
-        src/utils/metadata_manager.cc)
+        src/utils/defaults.cc
+        src/utils/metadata_manager.cc
+        src/utils/partitioner.cc)
 
 add_library(kafka4seastar STATIC ${HEADERS})
 
