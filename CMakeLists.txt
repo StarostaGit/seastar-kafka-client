@@ -34,6 +34,7 @@ set(HEADERS
         ${HEADER_DIRECTORY}/connection/kafka_connection.hh
         ${HEADER_DIRECTORY}/connection/tcp_connection.hh
         ${HEADER_DIRECTORY}/producer/batcher.hh
+        ${HEADER_DIRECTORY}/producer/kafka_producer.hh
         ${HEADER_DIRECTORY}/producer/producer_properties.hh
         ${HEADER_DIRECTORY}/producer/sender.hh
         ${HEADER_DIRECTORY}/protocol/kafka_error_code.hh
@@ -56,6 +57,7 @@ set(SOURCES
         src/connection/kafka_connection.cc
         src/connection/tcp_connection.cc
         src/producer/batcher.cc
+        src/producer/kafka_producer.cc
         src/producer/sender.cc
         src/protocol/kafka_error_code.cc
         src/protocol/kafka_records.cc
@@ -83,11 +85,11 @@ target_include_directories(kafka4seastar
 
 target_sources(kafka4seastar PRIVATE ${SOURCES})
 
-add_executable (main
-        main.cpp)
+add_executable (kafka_demo
+        demo/kafka_demo.cc)
 
 target_link_libraries (kafka4seastar
         Seastar::seastar)
 
-target_link_libraries(main
+target_link_libraries(kafka_demo
         kafka4seastar)
