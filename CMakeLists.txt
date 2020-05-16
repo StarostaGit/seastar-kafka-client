@@ -42,7 +42,8 @@ set(HEADERS
         ${HEADER_DIRECTORY}/protocol/metadata_request.hh
         ${HEADER_DIRECTORY}/protocol/metadata_response.hh
         ${HEADER_DIRECTORY}/protocol/produce_request.hh
-        ${HEADER_DIRECTORY}/protocol/produce_response.hh)
+        ${HEADER_DIRECTORY}/protocol/produce_response.hh
+        ${HEADER_DIRECTORY}/utils/metadata_manager.hh)
 
 set(SOURCES
         src/connection/connection_manager.cc
@@ -56,7 +57,8 @@ set(SOURCES
         src/protocol/metadata_request.cc
         src/protocol/metadata_response.cc
         src/protocol/produce_request.cc
-        src/protocol/produce_response.cc)
+        src/protocol/produce_response.cc
+        src/utils/metadata_manager.cc)
 
 add_library(kafka4seastar STATIC ${HEADERS})
 

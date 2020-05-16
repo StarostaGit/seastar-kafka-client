@@ -3,6 +3,7 @@
 
 #include <kafka4seastar/protocol/metadata_request.hh>
 #include <kafka4seastar/connection/connection_manager.hh>
+#include <kafka4seastar/utils/metadata_manager.hh>
 
 int main() {
     namespace k4s = kafka4seastar;
