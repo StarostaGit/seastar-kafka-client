@@ -25,7 +25,7 @@ project (kafka4seastar)
 
 find_package (Seastar REQUIRED)
 
-set (GEN_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen)
+set(GEN_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen)
 
 set(HEADER_DIRECTORY include/kafka4seastar)
 
@@ -85,11 +85,14 @@ target_include_directories(kafka4seastar
 
 target_sources(kafka4seastar PRIVATE ${SOURCES})
 
+add_subdirectory(tests/unit)
+
 add_executable (kafka_demo
         demo/kafka_demo.cc)
 
 target_link_libraries (kafka4seastar
-        Seastar::seastar)
+        Seastar::seastar
+        Seastar::seastar_testing)
 
 target_link_libraries(kafka_demo
         kafka4seastar)
