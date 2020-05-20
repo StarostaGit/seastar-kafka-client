@@ -25,8 +25,6 @@ project (kafka4seastar)
 
 find_package (Seastar REQUIRED)
 
-set(GEN_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen)
-
 set(HEADER_DIRECTORY include/kafka4seastar)
 
 set(HEADERS
@@ -72,18 +70,14 @@ set(SOURCES
         src/utils/metadata_manager.cc
         src/utils/partitioner.cc)
 
-add_library(kafka4seastar STATIC ${HEADERS})
+add_library(kafka4seastar STATIC ${SOURCES})
 
 target_include_directories(kafka4seastar
         PUBLIC
             $<INSTALL_INTERFACE:include>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-            $<BUILD_INTERFACE:${GEN_BINARY_DIR}/include>
         PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/src
-            ${GEN_BINARY_DIR}/src)
-
-target_sources(kafka4seastar PRIVATE ${SOURCES})
+            ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 add_subdirectory(tests/unit)
 
@@ -96,3 +90,18 @@ target_link_libraries (kafka4seastar
 
 target_link_libraries(kafka_demo
         kafka4seastar)
+
+include(GNUInstallDirs)
+
+install(TARGETS kafka4seastar
+        EXPORT kafka4seastar-export
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+install(EXPORT kafka4seastar-export
+        FILE
+            Kafka4seastarTargets.cmake
+        NAMESPACE
+            Kafka4seastar::
+        DESTINATION
+            ${CMAKE_INSTALL_LIBDIR}/cmake/kafka4seastar)

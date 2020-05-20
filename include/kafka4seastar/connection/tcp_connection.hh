@@ -23,11 +23,10 @@
 #pragma once
 
 #include <seastar/core/future.hh>
+#include <seastar/net/api.hh>
 #include <seastar/net/net.hh>
 #include <seastar/net/inet_address.hh>
 #include <string>
-
-using namespace seastar;
 
 namespace kafka4seastar {
 
@@ -37,17 +36,17 @@ struct tcp_connection_exception final : public std::runtime_error {
 
 class tcp_connection final {
 
-    net::inet_address _host;
+    seastar::net::inet_address _host;
     uint16_t _port;
     uint32_t _timeout_ms;
-    connected_socket _fd;
-    input_stream<char> _read_buf;
-    output_stream<char> _write_buf;
+    seastar::connected_socket _fd;
+    seastar::input_stream<char> _read_buf;
+    seastar::output_stream<char> _write_buf;
 
 public:
-    static future<tcp_connection> connect(const seastar::sstring& host, uint16_t port, uint32_t timeout_ms);
+    static seastar::future<tcp_connection> connect(const seastar::sstring& host, uint16_t port, uint32_t timeout_ms);
 
-    tcp_connection(const net::inet_address& host, uint16_t port, uint32_t timeout_ms, connected_socket&& fd) noexcept
+    tcp_connection(const seastar::net::inet_address& host, uint16_t port, uint32_t timeout_ms, seastar::connected_socket&& fd) noexcept
             : _host(host)
             , _port(port)
             , _timeout_ms(timeout_ms)
@@ -58,9 +57,9 @@ public:
     tcp_connection(tcp_connection&& other) = default;
     tcp_connection(tcp_connection& other) = delete;
 
-    future<> write(temporary_buffer<char> buff);
-    future<temporary_buffer<char>> read(size_t bytes_to_read);
-    future<> close();
+    seastar::future<> write(seastar::temporary_buffer<char> buff);
+    seastar::future<seastar::temporary_buffer<char>> read(size_t bytes_to_read);
+    seastar::future<> close();
 
 };
 

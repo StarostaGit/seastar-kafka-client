@@ -34,7 +34,7 @@ namespace kafka4seastar {
 
 namespace defaults {
 
-std::function<future<>(uint32_t)> exp_retry_backoff(uint32_t base_ms, uint32_t max_backoff_ms) {
+noncopyable_function<future<>(uint32_t)> exp_retry_backoff(uint32_t base_ms, uint32_t max_backoff_ms) {
     std::random_device rd;
     return [base_ms, max_backoff_ms, mt = std::mt19937(rd())] (uint32_t retry_number) mutable {
         if (retry_number == 0) {

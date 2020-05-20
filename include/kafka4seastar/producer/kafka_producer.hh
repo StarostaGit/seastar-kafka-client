@@ -33,8 +33,6 @@
 #include <kafka4seastar/utils/metadata_manager.hh>
 #include <kafka4seastar/producer/batcher.hh>
 
-using namespace seastar;
-
 namespace kafka4seastar {
 
 class kafka_producer final {

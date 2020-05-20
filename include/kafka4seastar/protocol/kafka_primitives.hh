@@ -33,8 +33,6 @@
 
 #include <kafka4seastar/protocol/kafka_error_code.hh>
 
-using namespace seastar;
-
 namespace kafka4seastar {
 
 struct parsing_exception : public std::runtime_error {
@@ -64,7 +62,7 @@ public:
 
     void serialize(std::ostream& os, int16_t api_version) const {
         std::array<char, NUMBER_SIZE> buffer{};
-        auto value = net::hton(_value);
+        auto value = seastar::net::hton(_value);
         auto value_pointer = reinterpret_cast<const char*>(&value);
         std::copy(value_pointer, value_pointer + NUMBER_SIZE, buffer.begin());
 
@@ -77,7 +75,7 @@ public:
         if (is.gcount() != NUMBER_SIZE) {
             throw parsing_exception("Stream ended prematurely when reading number");
         }
-        _value = net::ntoh(*reinterpret_cast<NumberType*>(buffer.data()));
+        _value = seastar::net::ntoh(*reinterpret_cast<NumberType*>(buffer.data()));
     }
 };
 
@@ -105,7 +103,7 @@ public:
 
     void serialize(std::ostream& os, int16_t api_version) const {
         std::array<char, NUMBER_SIZE> buffer{};
-        auto value = net::hton(_value);
+        auto value = seastar::net::hton(_value);
         auto value_pointer = reinterpret_cast<const char*>(&value);
         std::copy(value_pointer, value_pointer + NUMBER_SIZE, buffer.begin());
 
@@ -118,7 +116,7 @@ public:
         if (is.gcount() != NUMBER_SIZE) {
             throw parsing_exception("Stream ended prematurely when reading number");
         }
-        _value = net::ntoh(*reinterpret_cast<int16_t*>(buffer.data()));
+        _value = seastar::net::ntoh(*reinterpret_cast<int16_t*>(buffer.data()));
         try {
             error::kafka_error_code::get_error(_value);
         } catch (const std::out_of_range& e) {

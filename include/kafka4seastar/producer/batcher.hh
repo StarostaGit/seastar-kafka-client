@@ -28,8 +28,6 @@
 #include <kafka4seastar/producer/sender.hh>
 #include <kafka4seastar/utils/retry_helper.hh>
 
-using namespace seastar;
-
 namespace kafka4seastar {
 
 class batcher {
@@ -44,13 +42,13 @@ private:
     uint32_t _request_timeout;
 
     bool _keep_refreshing = false;
-    semaphore _refresh_finished = 0;
-    abort_source _stop_refresh;
+    seastar::semaphore _refresh_finished = 0;
+    seastar::abort_source _stop_refresh;
     uint32_t _expiration_time;
 public:
     batcher(metadata_manager& metadata_manager, connection_manager& connection_manager,
             uint32_t max_retries, ack_policy acks, uint32_t request_timeout, uint32_t expiration_time,
-            uint32_t buffer_memory, noncopyable_function<future<>(uint32_t)> retry_strategy)
+            uint32_t buffer_memory, seastar::noncopyable_function<seastar::future<>(uint32_t)> retry_strategy)
             : _messages_byte_size(0),
             _buffer_memory(buffer_memory),
             _metadata_manager(metadata_manager),
@@ -61,11 +59,11 @@ public:
             _expiration_time(expiration_time) {}
 
     void queue_message(sender_message message);
-    future<> flush();
-    future<> flush_coroutine(std::chrono::milliseconds dur);
+    seastar::future<> flush();
+    seastar::future<> flush_coroutine(std::chrono::milliseconds dur);
 
     void start_flush();
-    future<> stop_flush();
+    seastar::future<> stop_flush();
 };
 
 }

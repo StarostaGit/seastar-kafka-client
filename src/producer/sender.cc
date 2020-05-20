@@ -39,7 +39,7 @@ sender::sender(connection_manager& connection_manager,
             _acks(acks) {}
 
 std::optional<sender::connection_id> sender::broker_for_topic_partition(const seastar::sstring& topic, int32_t partition_index) {
-    auto metadata = _metadata_manager.get_metadata();
+    const auto& metadata = _metadata_manager.get_metadata();
 
     auto topic_candidate = std::lower_bound(metadata._topics->begin(), metadata._topics->end(), topic, [](auto& a, auto& b) {
         return *a._name < b;
@@ -59,7 +59,7 @@ std::optional<sender::connection_id> sender::broker_for_topic_partition(const se
 }
 
 sender::connection_id sender::broker_for_id(int32_t id) {
-    auto metadata = _metadata_manager.get_metadata();
+    const auto& metadata = _metadata_manager.get_metadata();
     auto it = std::lower_bound(metadata._brokers->begin(), metadata._brokers->end(), id, [] (auto& a, auto& b) {
         return *a._node_id < b;
     });
@@ -74,6 +74,7 @@ sender::connection_id sender::broker_for_id(int32_t id) {
 void sender::split_messages() {
     _messages_split_by_topic_partition.clear();
     _messages_split_by_broker_topic_partition.clear();
+
     for (auto& message : _messages) {
         auto broker = broker_for_topic_partition(message._topic, message._partition_index);
         if (broker) {
@@ -88,14 +89,16 @@ void sender::split_messages() {
 
 void sender::queue_requests() {
     _responses.clear();
+    _responses.reserve(_messages_split_by_broker_topic_partition.size());
+
     for (auto& [broker, messages_by_topic_partition] : _messages_split_by_broker_topic_partition) {
         produce_request req;
         req._acks = static_cast<int16_t>(_acks);
-        req._timeout_ms = 30000;
+        req._timeout_ms = _connection_timeout;
 
         kafka_array_t<produce_request_topic_produce_data> topics{
                 std::vector<produce_request_topic_produce_data>()};
-        req._topics = topics;
+        req._topics = std::move(topics);
 
         for (auto& [topic, messages_by_partition] : messages_by_topic_partition) {
             produce_request_topic_produce_data topic_data;
@@ -103,7 +106,7 @@ void sender::queue_requests() {
 
             kafka_array_t<produce_request_partition_produce_data> partitions{
                     std::vector<produce_request_partition_produce_data>()};
-            topic_data._partitions = partitions;
+            topic_data._partitions = std::move(partitions);
 
             for (auto& [partition, messages] : messages_by_partition) {
                 produce_request_partition_produce_data partition_data;
@@ -134,19 +137,19 @@ void sender::queue_requests() {
                     record._offset_delta = i;
                     record._key = messages[i]->_key;
                     record._value = messages[i]->_value;
-                    record_batch._records.push_back(record);
+                    record_batch._records.emplace_back(std::move(record));
                 }
 
-                records._record_batches.push_back(record_batch);
-                partition_data._records = records;
+                records._record_batches.emplace_back(std::move(record_batch));
+                partition_data._records = std::move(records);
 
-                topic_data._partitions->push_back(partition_data);
+                topic_data._partitions->emplace_back(std::move(partition_data));
             }
-            req._topics->push_back(topic_data);
+            req._topics->emplace_back(std::move(topic_data));
         }
 
         auto with_response = _acks != ack_policy::NONE;
-        _responses.emplace_back(_connection_manager.send(req, broker.first, broker.second, _connection_timeout, with_response)
+        _responses.emplace_back(_connection_manager.send(std::move(req), broker.first, broker.second, _connection_timeout, with_response)
             .then([broker](auto response) {
                 return std::make_pair(broker, response);
         }));
@@ -191,6 +194,7 @@ void sender::set_success_for_topic_partition(const seastar::sstring& topic, int3
 }
 
 void sender::move_messages(std::vector<sender_message>& messages) {
+    _messages.reserve(_messages.size() + messages.size());
     _messages.insert(_messages.end(), std::make_move_iterator(messages.begin()),
               std::make_move_iterator(messages.end()));
     messages.clear();
@@ -219,18 +223,13 @@ future<> sender::receive_responses() {
 }
 
 future<> sender::process_messages_errors() {
-    auto should_refresh_metadata = false;
     for (auto& message : _messages) {
-        if (message._error_code->_is_invalid_metadata) {
-            should_refresh_metadata = true;
-            break;
+        if (message._error_code->_invalidates_metadata) {
+            return _metadata_manager.refresh_metadata().discard_result();
         }
     }
-    if (should_refresh_metadata) {
-        return _metadata_manager.refresh_metadata().discard_result();
-    } else {
-        return make_ready_future<>();
-    }
+
+    return make_ready_future<>();
 }
 
 void sender::filter_messages() {

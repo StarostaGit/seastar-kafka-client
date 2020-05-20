@@ -24,8 +24,6 @@
 
 #include <kafka4seastar/protocol/kafka_primitives.hh>
 
-using namespace seastar;
-
 namespace kafka4seastar {
 
 class produce_response_batch_index_and_error_message {

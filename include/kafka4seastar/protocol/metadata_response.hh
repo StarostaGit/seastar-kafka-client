@@ -24,8 +24,6 @@
 
 #include <kafka4seastar/protocol/kafka_primitives.hh>
 
-using namespace seastar;
-
 namespace kafka4seastar {
 
 class metadata_response_broker {

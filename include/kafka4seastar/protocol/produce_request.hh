@@ -26,8 +26,6 @@
 #include <kafka4seastar/protocol/kafka_records.hh>
 #include <kafka4seastar/protocol/produce_response.hh>
 
-using namespace seastar;
-
 namespace kafka4seastar {
 
 class produce_request_partition_produce_data {

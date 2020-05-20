@@ -27,8 +27,6 @@
 
 #include <kafka4seastar/protocol/api_versions_response.hh>
 
-using namespace seastar;
-
 namespace kafka4seastar {
 
 class api_versions_request {

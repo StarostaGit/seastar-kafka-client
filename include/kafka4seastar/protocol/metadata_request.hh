@@ -25,8 +25,6 @@
 #include <kafka4seastar/protocol/kafka_primitives.hh>
 #include <kafka4seastar/protocol/metadata_response.hh>
 
-using namespace seastar;
-
 namespace kafka4seastar {
 
 class metadata_request_topic {

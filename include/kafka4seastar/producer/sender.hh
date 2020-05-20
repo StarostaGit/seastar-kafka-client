@@ -35,8 +35,6 @@
 #include <kafka4seastar/connection/connection_manager.hh>
 #include <kafka4seastar/utils/metadata_manager.hh>
 
-using namespace seastar;
-
 namespace kafka4seastar {
 
 struct send_exception : public std::runtime_error {
@@ -54,7 +52,7 @@ struct sender_message {
     int32_t _partition_index;
 
     kafka_error_code_t _error_code;
-    promise<> _promise;
+    seastar::promise<> _promise;
 
     sender_message() :
         _timestamp(std::chrono::system_clock::now()),
@@ -81,7 +79,7 @@ private:
 
     std::map<connection_id, std::map<seastar::sstring, std::map<int32_t, std::vector<sender_message*>>>> _messages_split_by_broker_topic_partition;
     std::map<topic_partition, std::vector<sender_message*>> _messages_split_by_topic_partition;
-    std::vector<future<std::pair<connection_id, produce_response>>> _responses;
+    std::vector<seastar::future<std::pair<connection_id, produce_response>>> _responses;
 
     uint32_t _connection_timeout;
 
@@ -99,9 +97,9 @@ private:
     void split_messages();
     void queue_requests();
 
-    void set_error_codes_for_responses(std::vector<future<std::pair<connection_id, produce_response>>>& responses);
+    void set_error_codes_for_responses(std::vector<seastar::future<std::pair<connection_id, produce_response>>>& responses);
     void filter_messages();
-    future<> process_messages_errors();
+    seastar::future<> process_messages_errors();
     
 public:
     sender(connection_manager& connection_manager, metadata_manager& metadata_manager,
@@ -112,7 +110,7 @@ public:
     bool messages_empty() const;
 
     void send_requests();
-    future<> receive_responses();
+    seastar::future<> receive_responses();
     void close();
 };
 

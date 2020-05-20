@@ -28,8 +28,6 @@
 #include <seastar/core/future.hh>
 #include <seastar/core/abort_source.hh>
 
-using namespace seastar;
-
 namespace kafka4seastar {
 
 class metadata_manager {
@@ -38,21 +36,22 @@ private:
     connection_manager& _connection_manager;
     metadata_response _metadata;
     bool _keep_refreshing = false;
-    semaphore _refresh_finished = 0;
-    abort_source _stop_refresh;
+    seastar::semaphore _refresh_finished = 0;
+    seastar::abort_source _stop_refresh;
     uint32_t _expiration_time;
+
+    seastar::future<> refresh_coroutine(std::chrono::milliseconds dur);
 
 public:
     explicit metadata_manager(connection_manager& manager, uint32_t expiration_time)
     : _connection_manager(manager), _expiration_time(expiration_time) {}
 
-    seastar::future<> refresh_coroutine(std::chrono::milliseconds dur);
     seastar::future<> refresh_metadata();
     void start_refresh();
-    future<> stop_refresh();
+    seastar::future<> stop_refresh();
     // Capturing resulting metadata response object is forbidden,
     // it can be destroyed any time.
-    metadata_response get_metadata();
+    metadata_response& get_metadata();
 
 };
 

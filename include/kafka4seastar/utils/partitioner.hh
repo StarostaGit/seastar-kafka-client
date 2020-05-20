@@ -25,8 +25,6 @@
 #include <atomic>
 #include <kafka4seastar/protocol/metadata_response.hh>
 
-using namespace seastar;
-
 namespace kafka4seastar {
 
 class partitioner {

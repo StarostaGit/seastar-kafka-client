@@ -26,8 +26,6 @@
 
 #include <vector>
 
-using namespace seastar;
-
 namespace kafka4seastar {
 
 class kafka_record_header {

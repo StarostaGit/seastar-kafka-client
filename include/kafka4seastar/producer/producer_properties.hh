@@ -33,8 +33,6 @@
 #include <kafka4seastar/utils/defaults.hh>
 #include <kafka4seastar/utils/partitioner.hh>
 
-using namespace seastar;
-
 namespace kafka4seastar {
 
 enum class ack_policy {
@@ -44,7 +42,7 @@ enum class ack_policy {
 };
 
 struct enable_idempotence_tag {};
-using enable_idempotence = bool_class<enable_idempotence_tag>;
+using enable_idempotence = seastar::bool_class<enable_idempotence_tag>;
 
 class producer_properties final {
 
@@ -65,7 +63,7 @@ public:
     // batches to form even when there is no load
     uint16_t _linger = 0;
     // max bytes stored in one batch
-    uint32_t _buffer_memory = 33554432;
+    uint32_t _buffer_memory = 32 * 1024 * 1024;
     // maximum number of retries to be performed before considering the request as failed
     uint32_t _retries = 10;
     // max number of requests in one batch
@@ -85,7 +83,7 @@ public:
     std::unique_ptr<partitioner> _partitioner = defaults::round_robin_partitioner();
     // Strategy describing how long to wait between consecutive retries,
     // based on how many have already been performed
-    noncopyable_function<future<>(uint32_t)> _retry_backoff_strategy = defaults::exp_retry_backoff(20, 1000);
+    seastar::noncopyable_function<seastar::future<>(uint32_t)> _retry_backoff_strategy = defaults::exp_retry_backoff(20, 1000);
 
 };
 

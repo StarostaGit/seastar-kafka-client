@@ -28,43 +28,41 @@
 #include <seastar/core/future.hh>
 #include <seastar/util/bool_class.hh>
 
-using namespace seastar;
-
 namespace kafka4seastar {
 
 struct do_retry_tag { };
-using do_retry = bool_class<do_retry_tag>;
+using do_retry = seastar::bool_class<do_retry_tag>;
 
 class retry_helper {
 private:
     uint32_t _max_retry_count;
 
-    noncopyable_function<future<>(uint32_t)> _backoff;
+    seastar::noncopyable_function<seastar::future<>(uint32_t)> _backoff;
 
     template<typename AsyncAction>
-    future<> with_retry(AsyncAction&& action, uint32_t retry_number) {
+    seastar::future<> with_retry(AsyncAction&& action, uint32_t retry_number) {
         if (retry_number >= _max_retry_count) {
-            return make_ready_future<>();
+            return seastar::make_ready_future<>();
         }
         return _backoff(retry_number)
         .then([this, action = std::forward<AsyncAction>(action), retry_number]() mutable {
-            return futurize_apply(action)
-            .then([this, action = std::forward<AsyncAction>(action), retry_number](bool_class<do_retry_tag> do_retry_val) mutable {
+            return seastar::futurize_apply(action)
+            .then([this, action = std::forward<AsyncAction>(action), retry_number](seastar::bool_class<do_retry_tag> do_retry_val) mutable {
                 if (do_retry_val == do_retry::yes) {
                     return with_retry(std::forward<AsyncAction>(action), retry_number + 1);
                 } else {
-                    return make_ready_future<>();
+                    return seastar::make_ready_future<>();
                 }
             });
         });
     }
 
 public:
-    retry_helper(uint32_t max_retry_count, noncopyable_function<future<>(uint32_t)> backoff)
+    retry_helper(uint32_t max_retry_count, seastar::noncopyable_function<seastar::future<>(uint32_t)> backoff)
         : _max_retry_count(max_retry_count), _backoff(std::move(backoff)) {}
 
     template<typename AsyncAction>
-    future<> with_retry(AsyncAction&& action) {
+    seastar::future<> with_retry(AsyncAction&& action) {
         return with_retry(std::forward<AsyncAction>(action), 0);
     }
 };

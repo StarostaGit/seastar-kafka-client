@@ -75,21 +75,17 @@ namespace kafka4seastar {
             }).handle_exception([this] (std::exception_ptr ep) {
                 try {
                     std::rethrow_exception(ep);
-                } catch (seastar::sleep_aborted& e) {
-                    return make_ready_future();
                 } catch (...) {
-                    // no other exception should happen here,
-                    // if they do, they have to be handled individually
-                    std::rethrow_exception(ep);
+                    return make_ready_future();
                 }
             });
-        }).then([this]{
+        }).finally([this]{
             _refresh_finished.signal();
             return;
         });
     }
 
-    metadata_response metadata_manager::get_metadata() {
+    metadata_response& metadata_manager::get_metadata() {
         return _metadata;
     }
 
