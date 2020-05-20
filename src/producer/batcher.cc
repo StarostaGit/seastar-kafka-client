@@ -76,7 +76,7 @@ future<> batcher::flush_coroutine(std::chrono::milliseconds dur) {
                 std::rethrow_exception(ep);
             }
         });
-    }).then([this]{
+    }).finally([this]{
         _refresh_finished.signal();
     });
 }

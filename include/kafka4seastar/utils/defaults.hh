@@ -26,6 +26,7 @@
 #include <memory>
 
 #include <seastar/core/future.hh>
+#include <seastar/util/noncopyable_function.hh>
 
 #include <kafka4seastar/utils/partitioner.hh>
 
@@ -35,7 +36,7 @@ namespace kafka4seastar {
 
 namespace defaults {
 
-std::function<future<>(uint32_t)> exp_retry_backoff(uint32_t base_ms, uint32_t max_backoff_ms);
+noncopyable_function<future<>(uint32_t)> exp_retry_backoff(uint32_t base_ms, uint32_t max_backoff_ms);
 
 std::unique_ptr<partitioner> round_robin_partitioner();
 std::unique_ptr<partitioner> random_partitioner();

@@ -221,7 +221,7 @@ future<> sender::receive_responses() {
 future<> sender::process_messages_errors() {
     auto should_refresh_metadata = false;
     for (auto& message : _messages) {
-        if (message._error_code->_is_invalid_metadata) {
+        if (message._error_code->_invalidates_metadata) {
             should_refresh_metadata = true;
             break;
         }

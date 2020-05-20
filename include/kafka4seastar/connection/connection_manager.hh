@@ -54,6 +54,26 @@ private:
 
     future<connection_iterator> connect(const seastar::sstring& host, uint16_t port, uint32_t timeout);
 
+    template<typename RequestType>
+    future<future<typename RequestType::response_type>> perform_request(connection_iterator& conn, RequestType& request, bool with_response) {
+        auto send_future = with_response
+                           ? conn->second->send(std::move(request))
+                           : conn->second->send_without_response(std::move(request));
+
+        promise<> promise;
+        auto f = promise.get_future();
+        _pending_queue = _pending_queue.then([f = std::move(f)] () mutable {
+            return std::move(f);
+        });
+
+        send_future = send_future.then([promise = std::move(promise)] (auto response) mutable {
+            promise.set_value();
+            return response;
+        });
+
+        return make_ready_future<decltype(send_future)>(std::move(send_future));
+    }
+
 public:
 
     explicit connection_manager(seastar::sstring client_id)
@@ -85,43 +105,13 @@ public:
         // returned as future<future<response>> and "unpacked"
         // outside the semaphore - scheduling inside semaphore
         // (only 1 at the time) and waiting for result outside it.
-        return with_semaphore(_send_semaphore, 1, [this, request = std::move(request), host, port, timeout, with_response] {
+        return with_semaphore(_send_semaphore, 1, [this, request = std::move(request), host, port, timeout, with_response] () mutable {
             auto conn = get_connection({host, port});
             if (conn != _connections.end()) {
-                auto send_future = with_response
-                        ? conn->second->send(std::move(request))
-                        : conn->second->send_without_response(std::move(request));
-
-                promise<> promise;
-                auto f = promise.get_future();
-                _pending_queue = _pending_queue.discard_result().then([f = std::move(f)] () mutable {
-                    return std::move(f);
-                });
-
-                send_future = send_future.then([promise = std::move(promise)] (auto response) mutable {
-                    promise.set_value();
-                    return response;
-                });
-
-                return make_ready_future<decltype(send_future)>(std::move(send_future));
+                return perform_request<RequestType>(conn, request, with_response);
             } else {
-                return connect(host, port, timeout).then([this, request = std::move(request), with_response](connection_iterator conn) {
-                    auto send_future = with_response
-                                       ? conn->second->send(std::move(request)).finally([conn]{})
-                                       : conn->second->send_without_response(std::move(request)).finally([conn]{});
-
-                    promise<> promise;
-                    auto f = promise.get_future();
-                    _pending_queue = _pending_queue.discard_result().then([f = std::move(f)] () mutable {
-                        return std::move(f);
-                    });
-
-                    send_future = send_future.then([promise = std::move(promise)] (auto response) mutable {
-                        promise.set_value();
-                        return response;
-                    });
-
-                    return make_ready_future<decltype(send_future)>(std::move(send_future));
+                return connect(host, port, timeout).then([this, request = std::move(request), with_response](connection_iterator conn) mutable {
+                    return perform_request<RequestType>(conn, request, with_response);
                 });
             }
         }).then([](future<typename RequestType::response_type> send_future) {
@@ -130,14 +120,14 @@ public:
             if (response._error_code == error::kafka_error_code::REQUEST_TIMED_OUT ||
                 response._error_code == error::kafka_error_code::CORRUPT_MESSAGE ||
                 response._error_code == error::kafka_error_code::NETWORK_EXCEPTION) {
-                _pending_queue = _pending_queue.discard_result().then([this, host, port] {
+                _pending_queue = _pending_queue.then([this, host, port] {
                     return disconnect({host, port});
                 });
             }
             return response;
         }).handle_exception([this, host, port] (std::exception_ptr ep) {
             try {
-                _pending_queue = _pending_queue.discard_result().then([this, host, port] {
+                _pending_queue = _pending_queue.then([this, host, port] {
                     return disconnect({host, port});
                 });
                 std::rethrow_exception(ep);

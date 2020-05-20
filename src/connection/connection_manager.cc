@@ -61,14 +61,15 @@ future<> connection_manager::disconnect(const connection_id& connection) {
     if (conn != _connections.end()) {
         auto conn_ptr = std::move(conn->second);
         _connections.erase(conn);
-        return conn_ptr->close().finally([conn_ptr = std::move(conn_ptr)]{});
+        auto f = conn_ptr->close();
+        return f.finally([conn_ptr = std::move(conn_ptr)]{});
     }
     return make_ready_future();
 }
 
 future<metadata_response> connection_manager::ask_for_metadata(metadata_request&& request) {
     auto conn_id = std::optional<connection_id>();
-    return seastar::do_with(metadata_response(), [this, request = std::move(request), conn_id = std::move(conn_id)] (metadata_response& metadata){
+    return seastar::do_with(metadata_response(), [this, request = std::move(request), conn_id = std::move(conn_id)] (metadata_response& metadata) mutable {
         return seastar::repeat([this, request = std::move(request), conn_id = std::move(conn_id), &metadata] () mutable {
             auto it = !conn_id ? _connections.begin() : _connections.upper_bound(*conn_id);
             if (it == _connections.end()) {
@@ -94,7 +95,7 @@ future<metadata_response> connection_manager::ask_for_metadata(metadata_request&
 future<> connection_manager::disconnect_all() {
     while (_connections.begin() != _connections.end()) {
         auto it = _connections.begin();
-        _pending_queue = _pending_queue.discard_result().then([this, host = it->first.first, port = it->first.second] {
+        _pending_queue = _pending_queue.then([this, host = it->first.first, port = it->first.second] {
             return disconnect({host, port});
         });
     }

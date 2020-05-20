@@ -83,7 +83,7 @@ namespace kafka4seastar {
                     std::rethrow_exception(ep);
                 }
             });
-        }).then([this]{
+        }).finally([this]{
             _refresh_finished.signal();
             return;
         });
