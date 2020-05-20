@@ -24,8 +24,8 @@
 
 #include <string>
 #include <cstdint>
-#include <unordered_map>
 #include <seastar/core/sstring.hh>
+#include <seastar/util/bool_class.hh>
 
 using namespace seastar;
 
@@ -33,20 +33,26 @@ namespace kafka4seastar {
 
 namespace error {
 
+struct is_retriable_tag {};
+using is_retriable = bool_class<is_retriable_tag>;
+
+struct invalidates_metadata_tag {};
+using invalidates_metadata = bool_class<invalidates_metadata_tag>;
+
 class kafka_error_code {
 
 public:
 
     int16_t _error_code;
     seastar::sstring _error_message;
-    bool _is_retriable;
-    bool _is_invalid_metadata;
+    is_retriable _is_retriable;
+    invalidates_metadata _invalidates_metadata;
 
     kafka_error_code(
         int16_t error_code,
         seastar::sstring error_message,
-        bool is_retriable,
-        bool is_invalid_metadata);
+        is_retriable is_retriable,
+        invalidates_metadata is_invalid_metadata);
 
     static const kafka_error_code& get_error(int16_t value);
 
@@ -139,9 +145,6 @@ public:
     static const kafka_error_code NO_REASSIGNMENT_IN_PROGRESS;
     static const kafka_error_code GROUP_SUBSCRIBED_TO_TOPIC;
     static const kafka_error_code INVALID_RECORD;
-
-private:
-    static std::unordered_map<int16_t, const kafka_error_code&> errors;
 };
 
 }

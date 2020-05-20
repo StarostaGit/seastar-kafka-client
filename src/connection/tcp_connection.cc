@@ -20,6 +20,7 @@
  * Copyright (C) 2019 ScyllaDB Ltd.
  */
 
+#include <seastar/core/reactor.hh>
 #include <kafka4seastar/connection/tcp_connection.hh>
 
 using namespace seastar;

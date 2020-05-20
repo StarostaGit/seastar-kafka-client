@@ -32,7 +32,8 @@ future<std::unique_ptr<kafka_connection>> kafka_connection::connect(const seasta
     .then([client_id] (tcp_connection connection) {
         return std::make_unique<kafka_connection>(std::move(connection), client_id);
     }).then([] (std::unique_ptr<kafka_connection> connection) {
-        return connection->init().then([connection = std::move(connection)] () mutable {
+        auto f = connection->init();
+        return f.then([connection = std::move(connection)] () mutable {
             return std::move(connection);
         });
     });

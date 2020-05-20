@@ -25,6 +25,7 @@
 #include <seastar/core/thread.hh>
 #include <kafka4seastar/producer/kafka_producer.hh>
 #include <seastar/core/smp.hh>
+#include <seastar/util/log.hh>
 
 using namespace seastar;
 

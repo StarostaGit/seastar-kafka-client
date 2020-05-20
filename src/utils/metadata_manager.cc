@@ -83,13 +83,13 @@ namespace kafka4seastar {
                     std::rethrow_exception(ep);
                 }
             });
-        }).then([this]{
+        }).finally([this]{
             _refresh_finished.signal();
             return;
         });
     }
 
-    metadata_response metadata_manager::get_metadata() {
+    metadata_response& metadata_manager::get_metadata() {
         return _metadata;
     }
 

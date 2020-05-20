@@ -91,11 +91,11 @@ void sender::queue_requests() {
     for (auto& [broker, messages_by_topic_partition] : _messages_split_by_broker_topic_partition) {
         produce_request req;
         req._acks = static_cast<int16_t>(_acks);
-        req._timeout_ms = 30000;
+        req._timeout_ms = _connection_timeout;
 
         kafka_array_t<produce_request_topic_produce_data> topics{
                 std::vector<produce_request_topic_produce_data>()};
-        req._topics = topics;
+        req._topics = std::move(topics);
 
         for (auto& [topic, messages_by_partition] : messages_by_topic_partition) {
             produce_request_topic_produce_data topic_data;
@@ -103,7 +103,7 @@ void sender::queue_requests() {
 
             kafka_array_t<produce_request_partition_produce_data> partitions{
                     std::vector<produce_request_partition_produce_data>()};
-            topic_data._partitions = partitions;
+            topic_data._partitions = std::move(partitions);
 
             for (auto& [partition, messages] : messages_by_partition) {
                 produce_request_partition_produce_data partition_data;
@@ -191,6 +191,7 @@ void sender::set_success_for_topic_partition(const seastar::sstring& topic, int3
 }
 
 void sender::move_messages(std::vector<sender_message>& messages) {
+    _messages.reserve(_messages.size() + messages.size());
     _messages.insert(_messages.end(), std::make_move_iterator(messages.begin()),
               std::make_move_iterator(messages.end()));
     messages.clear();
@@ -221,7 +222,7 @@ future<> sender::receive_responses() {
 future<> sender::process_messages_errors() {
     auto should_refresh_metadata = false;
     for (auto& message : _messages) {
-        if (message._error_code->_is_invalid_metadata) {
+        if (message._error_code->_invalidates_metadata) {
             should_refresh_metadata = true;
             break;
         }

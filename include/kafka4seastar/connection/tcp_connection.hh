@@ -23,6 +23,7 @@
 #pragma once
 
 #include <seastar/core/future.hh>
+#include <seastar/net/api.hh>
 #include <seastar/net/net.hh>
 #include <seastar/net/inet_address.hh>
 #include <string>

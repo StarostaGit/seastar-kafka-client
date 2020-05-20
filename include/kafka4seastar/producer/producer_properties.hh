@@ -65,7 +65,7 @@ public:
     // batches to form even when there is no load
     uint16_t _linger = 0;
     // max bytes stored in one batch
-    uint32_t _buffer_memory = 33554432;
+    uint32_t _buffer_memory = 32 * 1024 * 1024;
     // maximum number of retries to be performed before considering the request as failed
     uint32_t _retries = 10;
     // max number of requests in one batch

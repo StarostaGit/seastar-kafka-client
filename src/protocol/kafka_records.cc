@@ -260,17 +260,12 @@ void kafka_record_batch::deserialize(std::istream& is, int16_t api_version) {
             throw parsing_exception("Unsupported compression type");
     }
 
-    if (*attributes & 0x8) {
-        _timestamp_type = kafka_record_timestamp_type::LOG_APPEND_TIME;
-    } else _timestamp_type = kafka_record_timestamp_type::CREATE_TIME;
+    _timestamp_type = (*attributes & 0x8) ?
+                      kafka_record_timestamp_type::LOG_APPEND_TIME
+                      : _timestamp_type = kafka_record_timestamp_type::CREATE_TIME;
 
-    if (*attributes & 0x10) {
-        _is_transactional = true;
-    } else _is_transactional = false;
-
-    if (*attributes & 0x20) {
-        _is_control_batch = true;
-    } else _is_control_batch = false;
+    _is_transactional = bool(*attributes & 0x10);
+    _is_control_batch = bool(*attributes & 0x20);
 
     kafka_int32_t last_offset_delta;
     last_offset_delta.deserialize(is, api_version);
