@@ -55,8 +55,10 @@ int main(int ac, char** av) {
 
             k4s::producer_properties properties;
             properties._client_id = "seastar-kafka-demo";
+            properties._request_timeout = 1000;
             properties._servers = {
-                    {host, port}
+                    {host, port},
+                    {"172.29.0.1", 9092}
             };
 
             k4s::kafka_producer producer(std::move(properties));

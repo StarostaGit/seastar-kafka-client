@@ -108,6 +108,25 @@ class kafka_connection final {
         });
     }
 
+    template<typename RequestType>
+    seastar::future<typename RequestType::response_type> handle_response_exceptions(std::exception_ptr ep) {
+        try {
+            std::rethrow_exception(ep);
+        } catch (seastar::timed_out_error& e) {
+            typename RequestType::response_type response;
+            response._error_code = error::kafka_error_code::REQUEST_TIMED_OUT;
+            return seastar::make_ready_future<typename RequestType::response_type>(std::move(response));
+        } catch (parsing_exception& e) {
+            typename RequestType::response_type response;
+            response._error_code = error::kafka_error_code::CORRUPT_MESSAGE;
+            return seastar::make_ready_future<typename RequestType::response_type>(std::move(response));
+        } catch (...) {
+            typename RequestType::response_type response;
+            response._error_code = error::kafka_error_code::NETWORK_EXCEPTION;
+            return seastar::make_ready_future<typename RequestType::response_type>(std::move(response));
+        }
+    }
+
     future<> init();
 
 public:
@@ -155,22 +174,8 @@ public:
         });
         auto response_future = with_semaphore(_receive_semaphore, 1, [this, correlation_id, api_version] {
             return receive_response<RequestType>(correlation_id, api_version);
-        }).handle_exception([] (std::exception_ptr ep) {
-            try {
-                std::rethrow_exception(ep);
-            } catch (seastar::timed_out_error& e) {
-                typename RequestType::response_type response;
-                response._error_code = error::kafka_error_code::REQUEST_TIMED_OUT;
-                return response;
-            } catch (parsing_exception& e) {
-                typename RequestType::response_type response;
-                response._error_code = error::kafka_error_code::CORRUPT_MESSAGE;
-                return response;
-            } catch (...) {
-                typename RequestType::response_type response;
-                response._error_code = error::kafka_error_code::NETWORK_EXCEPTION;
-                return response;
-            }
+        }).handle_exception([this] (std::exception_ptr ep) {
+            return handle_response_exceptions<RequestType>(ep);
         });
         return response_future;
     }
@@ -192,22 +197,8 @@ public:
             typename RequestType::response_type response;
             response._error_code = error::kafka_error_code::NONE;
             return response;
-        }).handle_exception([] (auto ep) {
-            try {
-                std::rethrow_exception(ep);
-            } catch (seastar::timed_out_error& e) {
-                typename RequestType::response_type response;
-                response._error_code = error::kafka_error_code::REQUEST_TIMED_OUT;
-                return response;
-            } catch (parsing_exception& e) {
-                typename RequestType::response_type response;
-                response._error_code = error::kafka_error_code::CORRUPT_MESSAGE;
-                return response;
-            } catch (...) {
-                typename RequestType::response_type response;
-                response._error_code = error::kafka_error_code::NETWORK_EXCEPTION;
-                return response;
-            }
+        }).handle_exception([this] (auto ep) {
+            return handle_response_exceptions<RequestType>(ep);
         });
         return request_future;
     }

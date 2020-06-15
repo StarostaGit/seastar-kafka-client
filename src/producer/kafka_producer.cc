@@ -64,7 +64,7 @@ seastar::future<> kafka_producer::init() {
 }
 
 seastar::future<> kafka_producer::produce(seastar::sstring topic_name, seastar::sstring key, seastar::sstring value) {
-    auto metadata =_metadata_manager.get_metadata();
+    auto& metadata =_metadata_manager.get_metadata();
     auto partition_index = 0;
     for (const auto& topic : *metadata._topics) {
         if (*topic._name == topic_name) {
@@ -84,7 +84,7 @@ seastar::future<> kafka_producer::produce(seastar::sstring topic_name, seastar::
     return send_future;
 }
 
-seastar::future<> kafka_producer::flush() {
+inline seastar::future<> kafka_producer::flush() {
     return _batcher.flush();
 }
 

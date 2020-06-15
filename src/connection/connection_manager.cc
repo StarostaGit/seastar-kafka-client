@@ -22,8 +22,8 @@
 
 #include <kafka4seastar/connection/connection_manager.hh>
 #include <seastar/core/thread.hh>
-#include <memory>
 
+#include <memory>
 #include <utility>
 
 using namespace seastar;
@@ -49,7 +49,19 @@ future<> connection_manager::init(const std::set<connection_id>& servers, uint32
         fs.push_back(connect(server.first, server.second, request_timeout).discard_result());
     }
 
-    return when_all_succeed(fs.begin(), fs.end()).discard_result();
+    return when_all(fs.begin(), fs.end()).then([] (auto&& results) {
+        int failures = 0;
+        for (auto& f : results) {
+            try {
+                f.get();
+            } catch (...) {
+                ++failures;
+            }
+        }
+        if (failures == results.size()) {
+            throw connection_exception("Couldn't connect to any initial brokers");
+        }
+    });
 }
 
 connection_manager::connection_iterator connection_manager::get_connection(const connection_id& connection) {

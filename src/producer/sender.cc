@@ -39,7 +39,7 @@ sender::sender(connection_manager& connection_manager,
             _acks(acks) {}
 
 std::optional<sender::connection_id> sender::broker_for_topic_partition(const seastar::sstring& topic, int32_t partition_index) {
-    auto metadata = _metadata_manager.get_metadata();
+    auto& metadata = _metadata_manager.get_metadata();
 
     auto topic_candidate = std::lower_bound(metadata._topics->begin(), metadata._topics->end(), topic, [](auto& a, auto& b) {
         return *a._name < b;
@@ -59,7 +59,7 @@ std::optional<sender::connection_id> sender::broker_for_topic_partition(const se
 }
 
 sender::connection_id sender::broker_for_id(int32_t id) {
-    auto metadata = _metadata_manager.get_metadata();
+    auto& metadata = _metadata_manager.get_metadata();
     auto it = std::lower_bound(metadata._brokers->begin(), metadata._brokers->end(), id, [] (auto& a, auto& b) {
         return *a._node_id < b;
     });
@@ -74,6 +74,7 @@ sender::connection_id sender::broker_for_id(int32_t id) {
 void sender::split_messages() {
     _messages_split_by_topic_partition.clear();
     _messages_split_by_broker_topic_partition.clear();
+
     for (auto& message : _messages) {
         auto broker = broker_for_topic_partition(message._topic, message._partition_index);
         if (broker) {
@@ -88,6 +89,8 @@ void sender::split_messages() {
 
 void sender::queue_requests() {
     _responses.clear();
+    _responses.reserve(_messages_split_by_broker_topic_partition.size());
+
     for (auto& [broker, messages_by_topic_partition] : _messages_split_by_broker_topic_partition) {
         produce_request req;
         req._acks = static_cast<int16_t>(_acks);
@@ -134,15 +137,15 @@ void sender::queue_requests() {
                     record._offset_delta = i;
                     record._key = messages[i]->_key;
                     record._value = messages[i]->_value;
-                    record_batch._records.push_back(record);
+                    record_batch._records.emplace_back(std::move(record));
                 }
 
-                records._record_batches.push_back(record_batch);
-                partition_data._records = records;
+                records._record_batches.emplace_back(std::move(record_batch));
+                partition_data._records = std::move(records);
 
-                topic_data._partitions->push_back(partition_data);
+                topic_data._partitions->emplace_back(std::move(partition_data));
             }
-            req._topics->push_back(topic_data);
+            req._topics->emplace_back(std::move(topic_data));
         }
 
         auto with_response = _acks != ack_policy::NONE;
@@ -220,18 +223,13 @@ future<> sender::receive_responses() {
 }
 
 future<> sender::process_messages_errors() {
-    auto should_refresh_metadata = false;
     for (auto& message : _messages) {
         if (message._error_code->_invalidates_metadata) {
-            should_refresh_metadata = true;
-            break;
+            return _metadata_manager.refresh_metadata().discard_result();
         }
     }
-    if (should_refresh_metadata) {
-        return _metadata_manager.refresh_metadata().discard_result();
-    } else {
-        return make_ready_future<>();
-    }
+    
+    return make_ready_future<>();
 }
 
 void sender::filter_messages() {
