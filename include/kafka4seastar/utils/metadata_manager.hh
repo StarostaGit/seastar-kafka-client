@@ -28,11 +28,16 @@
 #include <seastar/core/future.hh>
 #include <seastar/core/abort_source.hh>
 
+#include <boost/functional/hash.hpp>
+
 using namespace seastar;
 
 namespace kafka4seastar {
 
 class metadata_manager {
+
+public:
+    using broker_id = std::pair<seastar::sstring, int32_t>;
 
 private:
     connection_manager& _connection_manager;
@@ -42,6 +47,9 @@ private:
     abort_source _stop_refresh;
     uint32_t _expiration_time;
 
+    std::map<broker_id, connection_manager::connection_id> _brokers;
+
+    void parse_new_metadata();
     seastar::future<> refresh_coroutine(std::chrono::milliseconds dur);
 
 public:
@@ -54,6 +62,7 @@ public:
     // Capturing resulting metadata response object is forbidden,
     // it can be destroyed any time.
     metadata_response& get_metadata();
+    connection_manager::connection_id& get_broker(broker_id& id);
 
 };
 

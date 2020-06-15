@@ -28,9 +28,6 @@
 
 #include <map>
 
-#include <iostream>
-#include <seastar/net/dns.hh>
-
 namespace kafka4seastar {
 
 struct metadata_refresh_exception : public std::runtime_error {

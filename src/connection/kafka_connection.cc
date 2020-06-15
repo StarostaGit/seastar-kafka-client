@@ -30,7 +30,6 @@ namespace kafka4seastar {
 
 future<std::unique_ptr<kafka_connection>> kafka_connection::connect(const seastar::sstring& host, uint16_t port,
         const seastar::sstring& client_id, uint32_t timeout_ms) {
-//    std::cout << "\nHost: " << host << " : " << port << "\n";
     return tcp_connection::connect(host, port, timeout_ms)
     .then([client_id] (tcp_connection connection) {
         return std::make_unique<kafka_connection>(std::move(connection), client_id);

@@ -30,6 +30,27 @@ using namespace seastar;
 
 namespace kafka4seastar {
 
+    void metadata_manager::parse_new_metadata() {
+        std::unordered_map<int32_t, metadata_response_broker> from_id;
+        for (auto& broker : *_metadata._brokers) {
+            from_id.insert({*broker._node_id, broker});
+        }
+
+        std::map<metadata_manager::broker_id, connection_manager::connection_id> new_brokers;
+        for (auto& topic : *_metadata._topics) {
+            for (auto& partition : *topic._partitions) {
+                auto& node = from_id[*partition._leader_id];
+                new_brokers.insert({{*topic._name, *partition._partition_index}, {*node._host, *node._port}});
+            }
+        }
+
+        _brokers = std::move(new_brokers);
+    }
+
+    connection_manager::connection_id& metadata_manager::get_broker(metadata_manager::broker_id& id) const {
+        return _brokers[id];
+    }
+
     seastar::future<> metadata_manager::refresh_metadata() {
         metadata_request req;
 
@@ -58,6 +79,7 @@ namespace kafka4seastar {
                 });
             }
             _metadata = std::move(metadata);
+            parse_new_metadata();
         }).handle_exception([] (std::exception_ptr ep) {
             try {
                 std::rethrow_exception(ep);

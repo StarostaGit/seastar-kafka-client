@@ -149,7 +149,7 @@ void sender::queue_requests() {
         }
 
         auto with_response = _acks != ack_policy::NONE;
-        _responses.emplace_back(_connection_manager.send(req, broker.first, broker.second, _connection_timeout, with_response)
+        _responses.emplace_back(_connection_manager.send(std::move(req), broker.first, broker.second, _connection_timeout, with_response)
             .then([broker](auto response) {
                 return std::make_pair(broker, response);
         }));
@@ -228,7 +228,7 @@ future<> sender::process_messages_errors() {
             return _metadata_manager.refresh_metadata().discard_result();
         }
     }
-    
+
     return make_ready_future<>();
 }
 
