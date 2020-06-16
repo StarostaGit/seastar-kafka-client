@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <kafka4seastar/protocol/kafka_primitives.hh>
+#include <seastar/kafka4seastar/protocol/kafka_primitives.hh>
 
 using namespace seastar;
 
@@ -35,18 +35,18 @@ public:
     kafka_int32_t _correlation_id;
     kafka_nullable_string_t _client_id;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
 
-    void deserialize(std::istream& is, int16_t api_version);
+    void deserialize(kafka::input_stream& is, int16_t api_version);
 };
 
 class response_header {
 public:
     kafka_int32_t _correlation_id;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
 
-    void deserialize(std::istream& is, int16_t api_version);
+    void deserialize(kafka::input_stream& is, int16_t api_version);
 };
 
 }

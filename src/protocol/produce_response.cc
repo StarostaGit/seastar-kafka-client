@@ -20,23 +20,24 @@
  * Copyright (C) 2019 ScyllaDB Ltd.
  */
 
-#include <kafka4seastar/protocol/produce_response.hh>
+#include <seastar/kafka4seastar/protocol/streams.hh>
+#include <seastar/kafka4seastar/protocol/produce_response.hh>
 
 using namespace seastar;
 
 namespace kafka4seastar {
 
-void produce_response_batch_index_and_error_message::serialize(std::ostream& os, int16_t api_version) const {
+void produce_response_batch_index_and_error_message::serialize(kafka::output_stream& os, int16_t api_version) const {
     _batch_index.serialize(os, api_version);
     _batch_index_error_message.serialize(os, api_version);
 }
 
-void produce_response_batch_index_and_error_message::deserialize(std::istream& is, int16_t api_version) {
+void produce_response_batch_index_and_error_message::deserialize(kafka::input_stream& is, int16_t api_version) {
     _batch_index.deserialize(is, api_version);
     _batch_index_error_message.deserialize(is, api_version);
 }
 
-void produce_response_partition_produce_response::serialize(std::ostream& os, int16_t api_version) const {
+void produce_response_partition_produce_response::serialize(kafka::output_stream& os, int16_t api_version) const {
     _partition_index.serialize(os, api_version);
     _error_code.serialize(os, api_version);
     _base_offset.serialize(os, api_version);
@@ -52,7 +53,7 @@ void produce_response_partition_produce_response::serialize(std::ostream& os, in
     }
 }
 
-void produce_response_partition_produce_response::deserialize(std::istream& is, int16_t api_version) {
+void produce_response_partition_produce_response::deserialize(kafka::input_stream& is, int16_t api_version) {
     _partition_index.deserialize(is, api_version);
     _error_code.deserialize(is, api_version);
     _base_offset.deserialize(is, api_version);
@@ -68,24 +69,24 @@ void produce_response_partition_produce_response::deserialize(std::istream& is, 
     }
 }
 
-void produce_response_topic_produce_response::serialize(std::ostream& os, int16_t api_version) const {
+void produce_response_topic_produce_response::serialize(kafka::output_stream& os, int16_t api_version) const {
     _name.serialize(os, api_version);
     _partitions.serialize(os, api_version);
 }
 
-void produce_response_topic_produce_response::deserialize(std::istream& is, int16_t api_version) {
+void produce_response_topic_produce_response::deserialize(kafka::input_stream& is, int16_t api_version) {
     _name.deserialize(is, api_version);
     _partitions.deserialize(is, api_version);
 }
 
-void produce_response::serialize(std::ostream& os, int16_t api_version) const {
+void produce_response::serialize(kafka::output_stream& os, int16_t api_version) const {
     _responses.serialize(os, api_version);
     if (api_version >= 1) {
         _throttle_time_ms.serialize(os, api_version);
     }
 }
 
-void produce_response::deserialize(std::istream& is, int16_t api_version) {
+void produce_response::deserialize(kafka::input_stream& is, int16_t api_version) {
     _responses.deserialize(is, api_version);
     if (api_version >= 1) {
         _throttle_time_ms.deserialize(is, api_version);

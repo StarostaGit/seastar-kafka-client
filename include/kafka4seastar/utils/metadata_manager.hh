@@ -23,19 +23,34 @@
 #pragma once
 
 #include <chrono>
+#include <optional>
 
-#include <kafka4seastar/connection/connection_manager.hh>
+#include <boost/functional/hash.hpp>
+#include <seastar/kafka4seastar/connection/connection_manager.hh>
 #include <seastar/core/future.hh>
 #include <seastar/core/abort_source.hh>
 
-#include <boost/functional/hash.hpp>
-
 using namespace seastar;
+
+namespace std {
+
+  template <>
+  struct hash<std::pair<seastar::sstring, int32_t>>
+  {
+    std::size_t operator()(const std::pair<seastar::sstring, int32_t>& k) const
+    {
+      using std::size_t;
+      using std::hash;
+      using std::string;
+      return hash<seastar::sstring>()(k.first) ^ hash<int32_t>()(k.second);
+    }
+  };
+
+}
 
 namespace kafka4seastar {
 
 class metadata_manager {
-
 public:
     using broker_id = std::pair<seastar::sstring, int32_t>;
 
@@ -47,9 +62,10 @@ private:
     abort_source _stop_refresh;
     uint32_t _expiration_time;
 
-    std::map<broker_id, connection_manager::connection_id> _brokers;
+    std::unordered_map<broker_id, connection_manager::connection_id> _brokers;
 
     void parse_new_metadata();
+
     seastar::future<> refresh_coroutine(std::chrono::milliseconds dur);
 
 public:
@@ -62,8 +78,8 @@ public:
     // Capturing resulting metadata response object is forbidden,
     // it can be destroyed any time.
     metadata_response& get_metadata();
-    connection_manager::connection_id& get_broker(broker_id& id);
 
+    std::optional<connection_manager::connection_id> get_broker(broker_id& id);
 };
 
 }

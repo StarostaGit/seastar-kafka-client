@@ -20,9 +20,7 @@
  * Copyright (C) 2019 ScyllaDB Ltd.
  */
 
-#include <kafka4seastar/connection/kafka_connection.hh>
-
-#include <iostream>
+#include <seastar/kafka4seastar/connection/kafka_connection.hh>
 
 using namespace seastar;
 

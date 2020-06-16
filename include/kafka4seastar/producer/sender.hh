@@ -29,11 +29,11 @@
 
 #include <seastar/core/future.hh>
 
-#include <kafka4seastar/producer/producer_properties.hh>
-#include <kafka4seastar/protocol/metadata_response.hh>
-#include <kafka4seastar/protocol/produce_response.hh>
-#include <kafka4seastar/connection/connection_manager.hh>
-#include <kafka4seastar/utils/metadata_manager.hh>
+#include <seastar/kafka4seastar/producer/producer_properties.hh>
+#include <seastar/kafka4seastar/protocol/metadata_response.hh>
+#include <seastar/kafka4seastar/protocol/produce_response.hh>
+#include <seastar/kafka4seastar/connection/connection_manager.hh>
+#include <seastar/kafka4seastar/utils/metadata_manager.hh>
 
 using namespace seastar;
 

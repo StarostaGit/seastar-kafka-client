@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <kafka4seastar/protocol/kafka_primitives.hh>
+#include <seastar/kafka4seastar/protocol/kafka_primitives.hh>
 
 using namespace seastar;
 
@@ -37,9 +37,9 @@ public:
 
     [[nodiscard]] const kafka_nullable_string_t& get_batch_index_error_message() const;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
 
-    void deserialize(std::istream& is, int16_t api_version);
+    void deserialize(kafka::input_stream& is, int16_t api_version);
 };
 
 class produce_response_partition_produce_response {
@@ -52,9 +52,9 @@ public:
     kafka_array_t<produce_response_batch_index_and_error_message> _record_errors;
     kafka_nullable_string_t _error_message;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
 
-    void deserialize(std::istream& is, int16_t api_version);
+    void deserialize(kafka::input_stream& is, int16_t api_version);
 };
 
 class produce_response_topic_produce_response {
@@ -62,9 +62,9 @@ public:
     kafka_string_t _name;
     kafka_array_t<produce_response_partition_produce_response> _partitions;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
 
-    void deserialize(std::istream& is, int16_t api_version);
+    void deserialize(kafka::input_stream& is, int16_t api_version);
 };
 
 class produce_response {
@@ -73,9 +73,9 @@ public:
     kafka_int32_t _throttle_time_ms;
     kafka_error_code_t _error_code;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
 
-    void deserialize(std::istream& is, int16_t api_version);
+    void deserialize(kafka::input_stream& is, int16_t api_version);
 };
 
 }

@@ -20,10 +20,10 @@
  * Copyright (C) 2019 ScyllaDB Ltd.
  */
 
-#include <kafka4seastar/connection/connection_manager.hh>
+#include <seastar/kafka4seastar/connection/connection_manager.hh>
 #include <seastar/core/thread.hh>
-
 #include <memory>
+
 #include <utility>
 
 using namespace seastar;
@@ -49,19 +49,7 @@ future<> connection_manager::init(const std::set<connection_id>& servers, uint32
         fs.push_back(connect(server.first, server.second, request_timeout).discard_result());
     }
 
-    return when_all(fs.begin(), fs.end()).then([] (auto&& results) {
-        int failures = 0;
-        for (auto& f : results) {
-            try {
-                f.get();
-            } catch (...) {
-                ++failures;
-            }
-        }
-        if (failures == results.size()) {
-            throw connection_exception("Couldn't connect to any initial brokers");
-        }
-    });
+    return when_all_succeed(fs.begin(), fs.end()).discard_result();
 }
 
 connection_manager::connection_iterator connection_manager::get_connection(const connection_id& connection) {
@@ -107,8 +95,9 @@ future<metadata_response> connection_manager::ask_for_metadata(metadata_request&
 future<> connection_manager::disconnect_all() {
     while (_connections.begin() != _connections.end()) {
         auto it = _connections.begin();
-        _pending_queue = _pending_queue.then([this, host = it->first.first, port = it->first.second] {
-            return disconnect({host, port});
+        auto fut = disconnect({it->first.first, it->first.second});
+        _pending_queue = _pending_queue.then([fut=std::move(fut)]() mutable {
+            return std::move(fut);
         });
     }
 

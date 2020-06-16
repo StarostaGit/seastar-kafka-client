@@ -20,8 +20,8 @@
  * Copyright (C) 2019 ScyllaDB Ltd.
  */
 
-#include <kafka4seastar/protocol/api_versions_request.hh>
+#include <seastar/kafka4seastar/protocol/api_versions_request.hh>
 
-void kafka4seastar::api_versions_request::serialize(std::ostream& os, int16_t api_version) const {}
+void kafka4seastar::api_versions_request::serialize(kafka::output_stream& os, int16_t api_version) const {}
 
-void kafka4seastar::api_versions_request::deserialize(std::istream& is, int16_t api_version) {}
+void kafka4seastar::api_versions_request::deserialize(kafka::input_stream& is, int16_t api_version) {}

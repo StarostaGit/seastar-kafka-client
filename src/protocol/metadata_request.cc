@@ -20,21 +20,21 @@
  * Copyright (C) 2019 ScyllaDB Ltd.
  */
 
-#include <kafka4seastar/protocol/metadata_request.hh>
+#include <seastar/kafka4seastar/protocol/metadata_request.hh>
 
 using namespace seastar;
 
 namespace kafka4seastar {
 
-void metadata_request_topic::serialize(std::ostream& os, int16_t api_version) const {
+void metadata_request_topic::serialize(kafka::output_stream& os, int16_t api_version) const {
     _name.serialize(os, api_version);
 }
 
-void metadata_request_topic::deserialize(std::istream& is, int16_t api_version) {
+void metadata_request_topic::deserialize(kafka::input_stream& is, int16_t api_version) {
     _name.deserialize(is, api_version);
 }
 
-void metadata_request::serialize(std::ostream& os, int16_t api_version) const {
+void metadata_request::serialize(kafka::output_stream& os, int16_t api_version) const {
     _topics.serialize(os, api_version);
     if (api_version >= 4) {
         _allow_auto_topic_creation.serialize(os, api_version);
@@ -45,7 +45,7 @@ void metadata_request::serialize(std::ostream& os, int16_t api_version) const {
     }
 }
 
-void metadata_request::deserialize(std::istream& is, int16_t api_version) {
+void metadata_request::deserialize(kafka::input_stream& is, int16_t api_version) {
     _topics.deserialize(is, api_version);
     if (api_version >= 4) {
         _allow_auto_topic_creation.deserialize(is, api_version);

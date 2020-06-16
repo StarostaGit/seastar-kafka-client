@@ -20,7 +20,7 @@
  * Copyright (C) 2019 ScyllaDB Ltd.
  */
 
-#include <kafka4seastar/utils/metadata_manager.hh>
+#include <seastar/kafka4seastar/utils/metadata_manager.hh>
 #include <seastar/core/sleep.hh>
 #include <seastar/core/thread.hh>
 
@@ -36,7 +36,8 @@ namespace kafka4seastar {
             from_id.insert({*broker._node_id, broker});
         }
 
-        std::map<metadata_manager::broker_id, connection_manager::connection_id> new_brokers;
+
+        std::unordered_map<metadata_manager::broker_id, connection_manager::connection_id> new_brokers;
         for (auto& topic : *_metadata._topics) {
             for (auto& partition : *topic._partitions) {
                 auto& node = from_id[*partition._leader_id];
@@ -47,8 +48,13 @@ namespace kafka4seastar {
         _brokers = std::move(new_brokers);
     }
 
-    connection_manager::connection_id& metadata_manager::get_broker(metadata_manager::broker_id& id) const {
-        return _brokers[id];
+    std::optional<connection_manager::connection_id> metadata_manager::get_broker(metadata_manager::broker_id& id) {
+        auto it = _brokers.find(id);
+        if (it != _brokers.end()) {
+            auto val = it->second;
+            return  std::optional<connection_manager::connection_id>(std::move(val));
+        }
+        return std::nullopt;
     }
 
     seastar::future<> metadata_manager::refresh_metadata() {
@@ -97,8 +103,12 @@ namespace kafka4seastar {
             }).handle_exception([this] (std::exception_ptr ep) {
                 try {
                     std::rethrow_exception(ep);
-                } catch (...) {
+                } catch (seastar::sleep_aborted& e) {
                     return make_ready_future();
+                } catch (...) {
+                    // no other exception should happen here,
+                    // if they do, they have to be handled individually
+                    std::rethrow_exception(ep);
                 }
             });
         }).finally([this]{

@@ -20,7 +20,7 @@
  * Copyright (C) 2019 ScyllaDB Ltd.
  */
 
-#include <kafka4seastar/protocol/api_versions_response.hh>
+#include <seastar/kafka4seastar/protocol/api_versions_response.hh>
 
 #include <algorithm>
 
@@ -28,13 +28,13 @@ using namespace seastar;
 
 namespace kafka4seastar {
 
-void api_versions_response_key::serialize(std::ostream& os, int16_t api_version) const {
+void api_versions_response_key::serialize(kafka::output_stream& os, int16_t api_version) const {
     _api_key.serialize(os, api_version);
     _min_version.serialize(os, api_version);
     _max_version.serialize(os, api_version);
 }
 
-void api_versions_response_key::deserialize(std::istream& is, int16_t api_version) {
+void api_versions_response_key::deserialize(kafka::input_stream& is, int16_t api_version) {
     _api_key.deserialize(is, api_version);
     _min_version.deserialize(is, api_version);
     _max_version.deserialize(is, api_version);
@@ -63,7 +63,7 @@ bool api_versions_response::contains(int16_t api_key) const {
     return it != _api_keys->end() && *it->_api_key == api_key;
 }
 
-void api_versions_response::serialize(std::ostream& os, int16_t api_version) const {
+void api_versions_response::serialize(kafka::output_stream& os, int16_t api_version) const {
     _error_code.serialize(os, api_version);
     _api_keys.serialize(os, api_version);
     if (api_version >= 1) {
@@ -71,7 +71,7 @@ void api_versions_response::serialize(std::ostream& os, int16_t api_version) con
     }
 }
 
-void api_versions_response::deserialize(std::istream& is, int16_t api_version) {
+void api_versions_response::deserialize(kafka::input_stream& is, int16_t api_version) {
     _error_code.deserialize(is, api_version);
     _api_keys.deserialize(is, api_version);
     std::sort(_api_keys->begin(), _api_keys->end());

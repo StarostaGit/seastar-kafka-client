@@ -22,22 +22,19 @@
 
 #pragma once
 
-#include <kafka4seastar/connection/kafka_connection.hh>
-#include <kafka4seastar/protocol/metadata_response.hh>
-#include <kafka4seastar/protocol/metadata_request.hh>
+#include <seastar/kafka4seastar/connection/kafka_connection.hh>
+#include <seastar/kafka4seastar/protocol/metadata_response.hh>
+#include <seastar/kafka4seastar/protocol/metadata_request.hh>
 
 #include <map>
+
+using namespace seastar;
 
 namespace kafka4seastar {
 
 struct metadata_refresh_exception : public std::runtime_error {
 public:
     explicit metadata_refresh_exception(const seastar::sstring& message) : runtime_error(message) {}
-};
-
-struct connection_exception : public std::runtime_error {
-public:
-    explicit connection_exception(const seastar::sstring& message) : runtime_error(message) {}
 };
 
 class connection_manager {
@@ -52,7 +49,8 @@ private:
     seastar::sstring _client_id;
 
     semaphore _send_semaphore;
-    seastar::future<> _pending_queue;
+
+    future<> _pending_queue;
 
     future<connection_iterator> connect(const seastar::sstring& host, uint16_t port, uint32_t timeout);
 
@@ -62,7 +60,7 @@ private:
                            ? conn->second->send(std::move(request))
                            : conn->second->send_without_response(std::move(request));
 
-        seastar::promise<> promise;
+        promise<> promise;
         auto f = promise.get_future();
         _pending_queue = _pending_queue.then([f = std::move(f)] () mutable {
             return std::move(f);
@@ -73,7 +71,7 @@ private:
             return response;
         });
 
-        return seastar::make_ready_future<decltype(send_future)>(std::move(send_future));
+        return make_ready_future<decltype(send_future)>(std::move(send_future));
     }
 
 public:
@@ -81,14 +79,14 @@ public:
     explicit connection_manager(seastar::sstring client_id)
         : _client_id(std::move(client_id)),
         _send_semaphore(1),
-        _pending_queue(seastar::make_ready_future<>()) {}
+        _pending_queue(make_ready_future<>()) {}
 
-    seastar::future<> init(const std::set<connection_id>& servers, uint32_t request_timeout);
+    future<> init(const std::set<connection_id>& servers, uint32_t request_timeout);
     connection_iterator get_connection(const connection_id& connection);
-    seastar::future<> disconnect(const connection_id& connection);
+    future<> disconnect(const connection_id& connection);
 
     template<typename RequestType>
-    seastar::future<typename RequestType::response_type> send(RequestType request, const seastar::sstring& host,
+    future<typename RequestType::response_type> send(RequestType&& request, const seastar::sstring& host,
             uint16_t port, uint32_t timeout, bool with_response=true) {
         // In order to preserve ordering of sends, a semaphore with
         // count = 1 is used due to its FIFO guarantees.
@@ -137,7 +135,7 @@ public:
                 typename RequestType::response_type response;
                 response._error_code = error::kafka_error_code::REQUEST_TIMED_OUT;
                 return response;
-            } catch (std::exception& e) {
+            } catch (...) {
                 typename RequestType::response_type response;
                 response._error_code = error::kafka_error_code::NETWORK_EXCEPTION;
                 return response;
@@ -145,9 +143,9 @@ public:
         });
     }
 
-    seastar::future<metadata_response> ask_for_metadata(metadata_request&& request);
+    future<metadata_response> ask_for_metadata(metadata_request&& request);
 
-    seastar::future<> disconnect_all();
+    future<> disconnect_all();
 
 };
 

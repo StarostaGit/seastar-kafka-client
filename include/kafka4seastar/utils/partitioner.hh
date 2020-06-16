@@ -23,7 +23,7 @@
 #pragma once
 
 #include <atomic>
-#include <kafka4seastar/protocol/metadata_response.hh>
+#include <seastar/kafka4seastar/protocol/metadata_response.hh>
 
 using namespace seastar;
 
@@ -31,18 +31,18 @@ namespace kafka4seastar {
 
 class partitioner {
 public:
-    virtual metadata_response_partition get_partition(const seastar::sstring& key, const kafka_array_t<metadata_response_partition>& partitions) = 0;
+    virtual const metadata_response_partition& get_partition(const seastar::sstring& key, const kafka_array_t<metadata_response_partition>& partitions) = 0;
     virtual ~partitioner() = default;
 };
 
 class basic_partitioner : public partitioner {
 public:
-    metadata_response_partition get_partition(const seastar::sstring& key, const kafka_array_t<metadata_response_partition>& partitions) override;
+    const metadata_response_partition& get_partition(const seastar::sstring& key, const kafka_array_t<metadata_response_partition>& partitions) override;
 };
 
 class rr_partitioner : public partitioner {
 public:
-    metadata_response_partition get_partition(const seastar::sstring& key, const kafka_array_t<metadata_response_partition>& partitions) override;
+    const metadata_response_partition& get_partition(const seastar::sstring& key, const kafka_array_t<metadata_response_partition>& partitions) override;
 private:
     uint32_t counter = 0;
 };

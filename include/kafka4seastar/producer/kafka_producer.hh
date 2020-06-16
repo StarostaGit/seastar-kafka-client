@@ -27,11 +27,11 @@
 #include <seastar/core/future.hh>
 #include <seastar/net/net.hh>
 
-#include <kafka4seastar/producer/producer_properties.hh>
-#include <kafka4seastar/connection/connection_manager.hh>
-#include <kafka4seastar/utils/partitioner.hh>
-#include <kafka4seastar/utils/metadata_manager.hh>
-#include <kafka4seastar/producer/batcher.hh>
+#include <seastar/kafka4seastar/producer/producer_properties.hh>
+#include <seastar/kafka4seastar/connection/connection_manager.hh>
+#include <seastar/kafka4seastar/utils/partitioner.hh>
+#include <seastar/kafka4seastar/utils/metadata_manager.hh>
+#include <seastar/kafka4seastar/producer/batcher.hh>
 
 using namespace seastar;
 
