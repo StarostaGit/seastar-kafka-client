@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include <kafka4seastar/protocol/kafka_primitives.hh>
-#include <kafka4seastar/protocol/metadata_response.hh>
+#include <seastar/kafka4seastar/protocol/kafka_primitives.hh>
+#include <seastar/kafka4seastar/protocol/metadata_response.hh>
 
 using namespace seastar;
 
@@ -33,9 +33,9 @@ class metadata_request_topic {
 public:
     kafka_string_t _name;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
 
-    void deserialize(std::istream& is, int16_t api_version);
+    void deserialize(kafka::input_stream& is, int16_t api_version);
 };
 
 class metadata_request {
@@ -50,9 +50,9 @@ public:
     kafka_bool_t _include_cluster_authorized_operations;
     kafka_bool_t _include_topic_authorized_operations;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
 
-    void deserialize(std::istream& is, int16_t api_version);
+    void deserialize(kafka::input_stream& is, int16_t api_version);
 };
 
 }

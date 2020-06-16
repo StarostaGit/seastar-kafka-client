@@ -21,18 +21,18 @@
  */
 
 #include <boost/functional/hash.hpp>
-#include <kafka4seastar/utils/partitioner.hh>
+#include <seastar/kafka4seastar/utils/partitioner.hh>
 
 using namespace seastar;
 
 namespace kafka4seastar {
 
-metadata_response_partition basic_partitioner::get_partition(const seastar::sstring& key, const kafka_array_t<metadata_response_partition>& partitions) {
+const metadata_response_partition& basic_partitioner::get_partition(const seastar::sstring& key, const kafka_array_t<metadata_response_partition>& partitions) {
     size_t index = std::rand() % partitions->size();
     return partitions[index];
 }
 
-metadata_response_partition rr_partitioner::get_partition(const seastar::sstring& key, const kafka_array_t<metadata_response_partition>& partitions) {
+const metadata_response_partition& rr_partitioner::get_partition(const seastar::sstring& key, const kafka_array_t<metadata_response_partition>& partitions) {
     if (!key.empty()) {
         auto hash_value = std::hash<sstring>()(key);
         return partitions[hash_value % partitions->size()];

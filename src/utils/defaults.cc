@@ -26,7 +26,7 @@
 
 #include <seastar/core/sleep.hh>
 
-#include <kafka4seastar/utils/defaults.hh>
+#include <seastar/kafka4seastar/utils/defaults.hh>
 
 using namespace seastar;
 

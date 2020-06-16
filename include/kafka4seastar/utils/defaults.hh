@@ -28,7 +28,7 @@
 #include <seastar/core/future.hh>
 #include <seastar/util/noncopyable_function.hh>
 
-#include <kafka4seastar/utils/partitioner.hh>
+#include <seastar/kafka4seastar/utils/partitioner.hh>
 
 using namespace seastar;
 

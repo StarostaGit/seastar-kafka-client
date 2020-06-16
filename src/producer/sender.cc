@@ -22,8 +22,8 @@
 
 #include <seastar/core/future-util.hh>
 
-#include <kafka4seastar/protocol/produce_request.hh>
-#include <kafka4seastar/producer/sender.hh>
+#include <seastar/kafka4seastar/protocol/produce_request.hh>
+#include <seastar/kafka4seastar/producer/sender.hh>
 
 using namespace seastar;
 
@@ -39,8 +39,10 @@ sender::sender(connection_manager& connection_manager,
             _acks(acks) {}
 
 std::optional<sender::connection_id> sender::broker_for_topic_partition(const seastar::sstring& topic, int32_t partition_index) {
-    auto& metadata = _metadata_manager.get_metadata();
-
+    //auto& metadata = _metadata_manager.get_metadata();
+    metadata_manager::broker_id key{topic, partition_index};
+    return _metadata_manager.get_broker(key);
+/*
     auto topic_candidate = std::lower_bound(metadata._topics->begin(), metadata._topics->end(), topic, [](auto& a, auto& b) {
         return *a._name < b;
     });
@@ -55,7 +57,7 @@ std::optional<sender::connection_id> sender::broker_for_topic_partition(const se
         }
     }
 
-    return std::nullopt;
+    return std::nullopt;*/
 }
 
 sender::connection_id sender::broker_for_id(int32_t id) {
@@ -74,7 +76,6 @@ sender::connection_id sender::broker_for_id(int32_t id) {
 void sender::split_messages() {
     _messages_split_by_topic_partition.clear();
     _messages_split_by_broker_topic_partition.clear();
-
     for (auto& message : _messages) {
         auto broker = broker_for_topic_partition(message._topic, message._partition_index);
         if (broker) {
@@ -90,23 +91,22 @@ void sender::split_messages() {
 void sender::queue_requests() {
     _responses.clear();
     _responses.reserve(_messages_split_by_broker_topic_partition.size());
-
     for (auto& [broker, messages_by_topic_partition] : _messages_split_by_broker_topic_partition) {
         produce_request req;
         req._acks = static_cast<int16_t>(_acks);
         req._timeout_ms = _connection_timeout;
 
         kafka_array_t<produce_request_topic_produce_data> topics{
-                std::vector<produce_request_topic_produce_data>()};
-        req._topics = std::move(topics);
+                kafka_array_t<produce_request_topic_produce_data>::container_type()};
+        req._topics = std::move(topics); // NEW
 
         for (auto& [topic, messages_by_partition] : messages_by_topic_partition) {
             produce_request_topic_produce_data topic_data;
             topic_data._name = topic;
 
             kafka_array_t<produce_request_partition_produce_data> partitions{
-                    std::vector<produce_request_partition_produce_data>()};
-            topic_data._partitions = std::move(partitions);
+                     kafka_array_t<produce_request_partition_produce_data>::container_type()};
+            topic_data._partitions = std::move(partitions); // NEW
 
             for (auto& [partition, messages] : messages_by_partition) {
                 produce_request_partition_produce_data partition_data;
@@ -141,9 +141,9 @@ void sender::queue_requests() {
                 }
 
                 records._record_batches.emplace_back(std::move(record_batch));
-                partition_data._records = std::move(records);
+                partition_data._records = std::move(records); // NEW
 
-                topic_data._partitions->emplace_back(std::move(partition_data));
+                topic_data._partitions->emplace_back(std::move(partition_data)); // NEW
             }
             req._topics->emplace_back(std::move(topic_data));
         }
@@ -223,13 +223,18 @@ future<> sender::receive_responses() {
 }
 
 future<> sender::process_messages_errors() {
+    auto should_refresh_metadata = false;
     for (auto& message : _messages) {
         if (message._error_code->_invalidates_metadata) {
-            return _metadata_manager.refresh_metadata().discard_result();
+            should_refresh_metadata = true;
+            break;
         }
     }
-
-    return make_ready_future<>();
+    if (should_refresh_metadata) {
+        return _metadata_manager.refresh_metadata().discard_result();
+    } else {
+        return make_ready_future<>();
+    }
 }
 
 void sender::filter_messages() {

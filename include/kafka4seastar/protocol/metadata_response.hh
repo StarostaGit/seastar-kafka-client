@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <kafka4seastar/protocol/kafka_primitives.hh>
+#include <seastar/kafka4seastar/protocol/kafka_primitives.hh>
 
 using namespace seastar;
 
@@ -35,9 +35,9 @@ public:
     kafka_int32_t _port;
     kafka_nullable_string_t _rack;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
 
-    void deserialize(std::istream& is, int16_t api_version);
+    void deserialize(kafka::input_stream& is, int16_t api_version);
 };
 
 class metadata_response_partition {
@@ -50,9 +50,9 @@ public:
     kafka_array_t<kafka_int32_t> _isr_nodes;
     kafka_array_t<kafka_int32_t> _offline_replicas;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
 
-    void deserialize(std::istream& is, int16_t api_version);
+    void deserialize(kafka::input_stream& is, int16_t api_version);
 };
 
 class metadata_response_topic {
@@ -63,9 +63,9 @@ public:
     kafka_array_t<metadata_response_partition> _partitions;
     kafka_int32_t _topic_authorized_operations;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
 
-    void deserialize(std::istream& is, int16_t api_version);
+    void deserialize(kafka::input_stream& is, int16_t api_version);
 };
 
 class metadata_response {
@@ -78,9 +78,9 @@ public:
     kafka_int32_t _cluster_authorized_operations;
     kafka_error_code_t _error_code;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
 
-    void deserialize(std::istream& is, int16_t api_version);
+    void deserialize(kafka::input_stream& is, int16_t api_version);
 };
 
 }

@@ -25,7 +25,8 @@
 #include <istream>
 #include <ostream>
 
-#include <kafka4seastar/protocol/api_versions_response.hh>
+#include <seastar/kafka4seastar/protocol/streams.hh>
+#include <seastar/kafka4seastar/protocol/api_versions_response.hh>
 
 using namespace seastar;
 
@@ -38,8 +39,8 @@ public:
     static constexpr int16_t MIN_SUPPORTED_VERSION = 0;
     static constexpr int16_t MAX_SUPPORTED_VERSION = 2;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
-    void deserialize(std::istream& is, int16_t api_version);
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
+    void deserialize(kafka::input_stream& is, int16_t api_version);
 };
 
 }

@@ -21,7 +21,7 @@
  */
 
 #include <unordered_map>
-#include <kafka4seastar/protocol/kafka_error_code.hh>
+#include <seastar/kafka4seastar/protocol/kafka_error_code.hh>
 
 using namespace seastar;
 

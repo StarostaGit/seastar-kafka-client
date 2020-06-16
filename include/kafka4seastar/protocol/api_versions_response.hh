@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include <kafka4seastar/protocol/kafka_primitives.hh>
+#include <seastar/kafka4seastar/protocol/kafka_primitives.hh>
+#include <seastar/kafka4seastar/protocol/streams.hh>
 
 using namespace seastar;
 
@@ -42,9 +43,9 @@ public:
     bool operator<(const api_versions_response_key& other) const noexcept;
     bool operator<(int16_t api_key) const noexcept;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
 
-    void deserialize(std::istream& is, int16_t api_version);
+    void deserialize(kafka::input_stream& is, int16_t api_version);
 };
 
 class api_versions_response {
@@ -70,9 +71,9 @@ public:
     bool contains(int16_t api_key) const;
     api_versions_response_key operator[](int16_t api_key) const;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
 
-    void deserialize(std::istream& is, int16_t api_version);
+    void deserialize(kafka::input_stream& is, int16_t api_version);
 };
 
 }

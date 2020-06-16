@@ -25,8 +25,8 @@
 #include <utility>
 #include <vector>
 
-#include <kafka4seastar/producer/sender.hh>
-#include <kafka4seastar/utils/retry_helper.hh>
+#include <seastar/kafka4seastar/producer/sender.hh>
+#include <seastar/kafka4seastar/utils/retry_helper.hh>
 
 using namespace seastar;
 

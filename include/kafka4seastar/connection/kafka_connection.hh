@@ -22,10 +22,10 @@
 
 #pragma once
 
-#include <kafka4seastar/connection/tcp_connection.hh>
-#include <kafka4seastar/protocol/headers.hh>
-#include <kafka4seastar/protocol/api_versions_request.hh>
-#include <kafka4seastar/protocol/api_versions_response.hh>
+#include <seastar/kafka4seastar/connection/tcp_connection.hh>
+#include <seastar/kafka4seastar/protocol/headers.hh>
+#include <seastar/kafka4seastar/protocol/api_versions_request.hh>
+#include <seastar/kafka4seastar/protocol/api_versions_response.hh>
 
 #include <boost/iostreams/device/back_inserter.hpp>
 #include <boost/iostreams/stream.hpp>
@@ -46,34 +46,30 @@ class kafka_connection final {
 
     template<typename RequestType>
     temporary_buffer<char> serialize_request(RequestType request, int32_t correlation_id, int16_t api_version) {
-        std::vector<char> header;
-        boost::iostreams::back_insert_device<std::vector<char>> header_sink{header};
-        boost::iostreams::stream<boost::iostreams::back_insert_device<std::vector<char>>> header_stream{header_sink};
+        thread_local kafka::output_stream header_stream = kafka::output_stream::resizable_stream();
+        header_stream.reset();
+
         request_header req_header;
         req_header._api_key = RequestType::API_KEY;
         req_header._api_version = api_version;
         req_header._correlation_id = correlation_id;
         req_header._client_id = _client_id;
         req_header.serialize(header_stream, 0);
-        header_stream.flush();
 
-        std::vector<char> payload;
-        boost::iostreams::back_insert_device<std::vector<char>> payload_sink{payload};
-        boost::iostreams::stream<boost::iostreams::back_insert_device<std::vector<char>>> payload_stream{payload_sink};
+        thread_local kafka::output_stream payload_stream = kafka::output_stream::resizable_stream();
+        payload_stream.reset();
+
         request.serialize(payload_stream, api_version);
-        payload_stream.flush();
 
-        std::vector<char> message;
-        boost::iostreams::back_insert_device<std::vector<char>> message_sink{message};
-        boost::iostreams::stream<boost::iostreams::back_insert_device<std::vector<char>>> message_stream{message_sink};
+        thread_local kafka::output_stream message_stream = kafka::output_stream::resizable_stream();
+        message_stream.reset();
 
-        kafka_int32_t message_size(header.size() + payload.size());
+        kafka_int32_t message_size(header_stream.size() + payload_stream.size());
         message_size.serialize(message_stream, 0);
-        message_stream.write(header.data(), header.size());
-        message_stream.write(payload.data(), payload.size());
-        message_stream.flush();
+        message_stream.write(header_stream.begin(), header_stream.size());
+        message_stream.write(payload_stream.begin(), payload_stream.size());
 
-        return temporary_buffer<char>{message.data(), message.size()};
+        return temporary_buffer<char>{message_stream.begin(), message_stream.size()};
     }
 
     future<> send_request(temporary_buffer<char> message_buffer) {
@@ -83,8 +79,7 @@ class kafka_connection final {
     template<typename RequestType>
     future<typename RequestType::response_type> receive_response(int32_t correlation_id, int16_t api_version) {
         return _connection.read(4).then([] (temporary_buffer<char> response_size) {
-            boost::iostreams::stream<boost::iostreams::array_source> response_size_stream
-                    (response_size.get(), response_size.size());
+            kafka::input_stream response_size_stream(response_size.get(), response_size.size());
 
             kafka_int32_t size;
             size.deserialize(response_size_stream, 0);
@@ -92,8 +87,7 @@ class kafka_connection final {
         }).then([this] (int32_t response_size) {
             return _connection.read(response_size);
         }).then([correlation_id, api_version] (temporary_buffer<char> response) {
-            boost::iostreams::stream<boost::iostreams::array_source> response_stream
-                    (response.get(), response.size());
+            kafka::input_stream response_stream(response.get(), response.size());
 
             response_header response_header;
             response_header.deserialize(response_stream, 0);
@@ -106,25 +100,6 @@ class kafka_connection final {
 
             return deserialized_response;
         });
-    }
-
-    template<typename RequestType>
-    seastar::future<typename RequestType::response_type> handle_response_exceptions(std::exception_ptr ep) {
-        try {
-            std::rethrow_exception(ep);
-        } catch (seastar::timed_out_error& e) {
-            typename RequestType::response_type response;
-            response._error_code = error::kafka_error_code::REQUEST_TIMED_OUT;
-            return seastar::make_ready_future<typename RequestType::response_type>(std::move(response));
-        } catch (parsing_exception& e) {
-            typename RequestType::response_type response;
-            response._error_code = error::kafka_error_code::CORRUPT_MESSAGE;
-            return seastar::make_ready_future<typename RequestType::response_type>(std::move(response));
-        } catch (...) {
-            typename RequestType::response_type response;
-            response._error_code = error::kafka_error_code::NETWORK_EXCEPTION;
-            return seastar::make_ready_future<typename RequestType::response_type>(std::move(response));
-        }
     }
 
     future<> init();
@@ -174,8 +149,22 @@ public:
         });
         auto response_future = with_semaphore(_receive_semaphore, 1, [this, correlation_id, api_version] {
             return receive_response<RequestType>(correlation_id, api_version);
-        }).handle_exception([this] (std::exception_ptr ep) {
-            return handle_response_exceptions<RequestType>(ep);
+        }).handle_exception([] (std::exception_ptr ep) {
+            try {
+                std::rethrow_exception(ep);
+            } catch (seastar::timed_out_error& e) {
+                typename RequestType::response_type response;
+                response._error_code = error::kafka_error_code::REQUEST_TIMED_OUT;
+                return response;
+            } catch (parsing_exception& e) {
+                typename RequestType::response_type response;
+                response._error_code = error::kafka_error_code::CORRUPT_MESSAGE;
+                return response;
+            } catch (...) {
+                typename RequestType::response_type response;
+                response._error_code = error::kafka_error_code::NETWORK_EXCEPTION;
+                return response;
+            }
         });
         return response_future;
     }
@@ -197,8 +186,22 @@ public:
             typename RequestType::response_type response;
             response._error_code = error::kafka_error_code::NONE;
             return response;
-        }).handle_exception([this] (auto ep) {
-            return handle_response_exceptions<RequestType>(ep);
+        }).handle_exception([] (auto ep) {
+            try {
+                std::rethrow_exception(ep);
+            } catch (seastar::timed_out_error& e) {
+                typename RequestType::response_type response;
+                response._error_code = error::kafka_error_code::REQUEST_TIMED_OUT;
+                return response;
+            } catch (parsing_exception& e) {
+                typename RequestType::response_type response;
+                response._error_code = error::kafka_error_code::CORRUPT_MESSAGE;
+                return response;
+            } catch (...) {
+                typename RequestType::response_type response;
+                response._error_code = error::kafka_error_code::NETWORK_EXCEPTION;
+                return response;
+            }
         });
         return request_future;
     }

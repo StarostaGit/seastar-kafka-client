@@ -22,10 +22,9 @@
 
 #pragma once
 
-#include <kafka4seastar/protocol/kafka_primitives.hh>
+#include <seastar/kafka4seastar/protocol/kafka_primitives.hh>
 
 #include <vector>
-
 using namespace seastar;
 
 namespace kafka4seastar {
@@ -35,9 +34,11 @@ public:
     seastar::sstring _header_key;
     seastar::sstring _value;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
 
-    void deserialize(std::istream& is, int16_t api_version);
+    void deserialize(kafka::input_stream& is, int16_t api_version);
+
+    [[nodiscard]] size_t serialized_length() const noexcept;
 };
 
 class kafka_record {
@@ -48,9 +49,9 @@ public:
     seastar::sstring _value;
     std::vector<kafka_record_header> _headers;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
 
-    void deserialize(std::istream& is, int16_t api_version);
+    void deserialize(kafka::input_stream& is, int16_t api_version);
 };
 
 enum class kafka_record_compression_type {
@@ -77,20 +78,20 @@ public:
     kafka_int16_t _producer_epoch;
     kafka_int32_t _base_sequence;
 
-    std::vector<kafka_record> _records;
+     std::vector<kafka_record> _records;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
 
-    void deserialize(std::istream& is, int16_t api_version);
+    void deserialize(kafka::input_stream& is, int16_t api_version);
 };
 
 class kafka_records {
 public:
     std::vector<kafka_record_batch> _record_batches;
 
-    void serialize(std::ostream& os, int16_t api_version) const;
+    void serialize(kafka::output_stream& os, int16_t api_version) const;
 
-    void deserialize(std::istream& is, int16_t api_version);
+    void deserialize(kafka::input_stream& is, int16_t api_version);
 };
 
 }

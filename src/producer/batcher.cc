@@ -22,7 +22,7 @@
 
 #include <seastar/core/sleep.hh>
 
-#include <kafka4seastar/producer/batcher.hh>
+#include <seastar/kafka4seastar/producer/batcher.hh>
 
 using namespace seastar;
 
@@ -31,9 +31,9 @@ namespace kafka4seastar {
 void batcher::queue_message(sender_message message) {
     _messages.emplace_back(std::move(message));
     _messages_byte_size += message.size();
-    if (_expiration_time == 0 || _messages_byte_size > _buffer_memory) {
-        (void) flush();
-    }
+//    if (_expiration_time == 0 || _messages_byte_size > _buffer_memory) {
+ //       (void) flush();
+  //  }
 }
 
 future<> batcher::flush() {

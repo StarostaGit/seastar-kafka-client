@@ -32,6 +32,14 @@ using namespace seastar;
 
 namespace kafka4seastar {
 
+inline struct connected_socket_input_stream_config duperel() {
+struct connected_socket_input_stream_config cfg;
+cfg.buffer_size  = 32;
+cfg.min_buffer_size = 1;
+cfg.max_buffer_size = 1024;
+return cfg;
+}
+
 struct tcp_connection_exception final : public std::runtime_error {
     explicit tcp_connection_exception(const seastar::sstring& message) : runtime_error(message) {}
 };
@@ -53,8 +61,10 @@ public:
             , _port(port)
             , _timeout_ms(timeout_ms)
             , _fd(std::move(fd))
-            , _read_buf(_fd.input())
-            , _write_buf(_fd.output()) {};
+            , _read_buf(_fd.input(duperel()))
+            , _write_buf(_fd.output(8192 * 512)) {
+	_fd.set_nodelay(true);
+};
 
     tcp_connection(tcp_connection&& other) = default;
     tcp_connection(tcp_connection& other) = delete;

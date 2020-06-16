@@ -31,16 +31,16 @@
 #include <seastar/core/print.hh>
 #include <seastar/core/thread.hh>
 
-#include <kafka4seastar/producer/kafka_producer.hh>
-#include <kafka4seastar/producer/producer_properties.hh>
-#include <kafka4seastar/protocol/kafka_primitives.hh>
-#include <kafka4seastar/protocol/metadata_request.hh>
-#include <kafka4seastar/protocol/metadata_response.hh>
-#include <kafka4seastar/protocol/api_versions_request.hh>
-#include <kafka4seastar/protocol/api_versions_response.hh>
-#include <kafka4seastar/connection/tcp_connection.hh>
-#include <kafka4seastar/protocol/produce_request.hh>
-#include <kafka4seastar/protocol/produce_response.hh>
+#include <seastar/kafka4seastar/producer/kafka_producer.hh>
+#include <seastar/kafka4seastar/producer/producer_properties.hh>
+#include <seastar/kafka4seastar/protocol/kafka_primitives.hh>
+#include <seastar/kafka4seastar/protocol/metadata_request.hh>
+#include <seastar/kafka4seastar/protocol/metadata_response.hh>
+#include <seastar/kafka4seastar/protocol/api_versions_request.hh>
+#include <seastar/kafka4seastar/protocol/api_versions_response.hh>
+#include <seastar/kafka4seastar/connection/tcp_connection.hh>
+#include <seastar/kafka4seastar/protocol/produce_request.hh>
+#include <seastar/kafka4seastar/protocol/produce_response.hh>
 
 using namespace seastar;
 
@@ -84,7 +84,7 @@ seastar::future<> kafka_producer::produce(seastar::sstring topic_name, seastar::
     return send_future;
 }
 
-inline seastar::future<> kafka_producer::flush() {
+seastar::future<> kafka_producer::flush() {
     return _batcher.flush();
 }
 
