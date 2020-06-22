@@ -62,15 +62,23 @@ void kafka_record::serialize(std::ostream& os, int16_t api_version) const {
     _timestamp_delta.serialize(record_data_stream, api_version);
     _offset_delta.serialize(record_data_stream, api_version);
 
-    kafka_varint_t key_length(_key.size());
-    key_length.serialize(record_data_stream, api_version);
+    if (_key) {
+        kafka_varint_t key_length(_key->size());
+        key_length.serialize(record_data_stream, api_version);
+        record_data_stream.write(_key->data(), _key->size());
+    } else {
+        kafka_varint_t null_indicator(-1);
+        null_indicator.serialize(record_data_stream, api_version);
+    }
 
-    record_data_stream.write(_key.data(), _key.size());
-
-    kafka_varint_t value_length(_value.size());
-    value_length.serialize(record_data_stream, api_version);
-
-    record_data_stream.write(_value.data(), _value.size());
+    if (_value) {
+        kafka_varint_t value_length(_value->size());
+        value_length.serialize(record_data_stream, api_version);
+        record_data_stream.write(_value->data(), _value->size());
+    } else {
+        kafka_varint_t null_indicator(-1);
+        null_indicator.serialize(record_data_stream, api_version);
+    }
 
     kafka_varint_t header_count(_headers.size());
     header_count.serialize(record_data_stream, api_version);
@@ -104,11 +112,11 @@ void kafka_record::deserialize(std::istream& is, int16_t api_version) {
 
     kafka_buffer_t<kafka_varint_t> key;
     key.deserialize(is, api_version);
-    _key.swap(*key);
+    _key.emplace(std::move(*key));
 
     kafka_buffer_t<kafka_varint_t> value;
     value.deserialize(is, api_version);
-    _value.swap(*value);
+    _value.emplace(std::move(*value));
 
     kafka_array_t<kafka_record_header, kafka_varint_t> headers;
     headers.deserialize(is, api_version);

@@ -43,8 +43,8 @@ public:
 };
 
 struct sender_message {
-    seastar::sstring _key;
-    seastar::sstring _value;
+    std::optional<seastar::sstring> _key;
+    std::optional<seastar::sstring> _value;
 
     std::chrono::time_point<std::chrono::system_clock> _timestamp;
 
@@ -63,7 +63,9 @@ struct sender_message {
     sender_message(sender_message& s) = delete;
 
     size_t size() const noexcept {
-        return _key.size() + _value.size();
+        auto key_size = _key ? _key->size() : 0;
+        auto value_size = _value ? _value->size() : 0;
+        return key_size + value_size;
     }
 };
 

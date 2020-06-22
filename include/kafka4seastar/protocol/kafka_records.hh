@@ -42,8 +42,8 @@ class kafka_record {
 public:
     kafka_varint_t _timestamp_delta;
     kafka_varint_t _offset_delta;
-    seastar::sstring _key;
-    seastar::sstring _value;
+    std::optional<seastar::sstring> _key;
+    std::optional<seastar::sstring> _value;
     std::vector<kafka_record_header> _headers;
 
     void serialize(std::ostream& os, int16_t api_version) const;
