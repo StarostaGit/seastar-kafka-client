@@ -63,12 +63,19 @@ seastar::future<> kafka_producer::init() {
     });
 }
 
-seastar::future<> kafka_producer::produce(seastar::sstring topic_name, seastar::sstring key, seastar::sstring value) {
+seastar::future<> kafka_producer::produce(seastar::sstring topic_name,
+                                          seastar::sstring key, seastar::sstring value) {
+    return produce(std::move(topic_name), std::optional(std::move(key)), std::optional(std::move(value)));
+}
+
+seastar::future<> kafka_producer::produce(seastar::sstring topic_name,
+        std::optional<seastar::sstring> key, std::optional<seastar::sstring> value) {
     const auto& metadata =_metadata_manager.get_metadata();
     auto partition_index = 0;
     for (const auto& topic : *metadata._topics) {
         if (*topic._name == topic_name) {
-            partition_index = *_properties._partitioner->get_partition(key, topic._partitions)._partition_index;
+            partition_index = *_properties._partitioner->get_partition(
+                    key.value_or(""), topic._partitions)._partition_index;
             break;
         }
     }
