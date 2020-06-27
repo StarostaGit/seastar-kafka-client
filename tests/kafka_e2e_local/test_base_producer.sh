@@ -20,7 +20,7 @@ function init_kafka() {
     echo "Starting Kafka."
     tput sgr0
 
-    cd ../kafkadev_local || exit
+    cd ../../utility/kafkadev_local || exit
 
     terraform init >/dev/null 2>&1
     terraform apply --var "kafka_count=$1" --var "network_cidr=$2" --auto-approve >/dev/null 2>&1
@@ -54,7 +54,7 @@ function init_producer() {
     touch .kafka_producer_input
 
     # Set up netcat at port 7777 to pipe input into.
-    (nc -k -l 7777 | "$KAFKA_DEMO_DIR"/kafka_demo --host "$1" >/dev/null 2>&1) &
+    (nc -k -l 7777 | "$KAFKA_DEMO_DIR"/kafka_demo --host "$1") &
     KAFKA_DEMO_PID=$!
 
     tput setaf 3
@@ -93,7 +93,7 @@ function write_random() {
 }
 
 function invoke_docker() {
-    CONTAINERS=$(cd ../kafkadev_local; terraform output -json kafka_name | cut -c2- | rev | cut -c2- | rev | tr ',' '\n')
+    CONTAINERS=$(cd ../../utility/kafkadev_local; terraform output -json kafka_name | cut -c2- | rev | cut -c2- | rev | tr ',' '\n')
     NTH=$(echo $CONTAINERS | tr ' ' '\n' |  sed -n "$1p" | tr -d '"')
 
     tput setaf 4
@@ -136,7 +136,7 @@ function end_test() {
     rm .kafka_producer_input
     rm .kafka_consumer_output
 
-    cd ../kafkadev_local || exit
+    cd ../../utility/kafkadev_local || exit
 
     terraform destroy --var "kafka_count=$1" --var "network_cidr=$2" --auto-approve >/dev/null 2>&1
 
